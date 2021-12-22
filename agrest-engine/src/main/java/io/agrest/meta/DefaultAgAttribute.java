@@ -2,17 +2,16 @@ package io.agrest.meta;
 
 import io.agrest.property.PropertyReader;
 import org.apache.cayenne.exp.parser.ASTPath;
-import org.apache.cayenne.util.ToStringBuilder;
 
 /**
  * @since 1.12
  */
 public class DefaultAgAttribute implements AgAttribute {
 
-	private String name;
-	private Class<?> javaType;
-	private ASTPath pathExp;
-	private PropertyReader propertyReader;
+	private final String name;
+	private final Class<?> javaType;
+	private final ASTPath pathExp;
+	private final PropertyReader propertyReader;
 
 	public DefaultAgAttribute(String name, Class<?> javaType, ASTPath pathExp, PropertyReader propertyReader) {
 		this.name = name;
@@ -46,9 +45,6 @@ public class DefaultAgAttribute implements AgAttribute {
 
     @Override
 	public String toString() {
-
-		ToStringBuilder tsb = new ToStringBuilder(this);
-		tsb.append("name", name);
-		return tsb.toString();
+		return getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(this)) + "[" + getName() + "]";
 	}
 }

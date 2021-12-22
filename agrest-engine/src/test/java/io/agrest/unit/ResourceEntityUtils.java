@@ -1,18 +1,14 @@
 package io.agrest.unit;
 
 import io.agrest.ResourceEntity;
-import io.agrest.RootResourceEntity;
 import io.agrest.meta.DefaultAgAttribute;
-import io.agrest.property.BeanPropertyReader;
 import org.apache.cayenne.exp.parser.ASTObjPath;
+
+import java.util.function.Function;
 
 public class ResourceEntityUtils {
 
-    public static void appendAttribute(ResourceEntity<?> entity, String name) {
-        appendAttribute(entity, name, String.class);
-    }
-
-    public static void appendAttribute(ResourceEntity<?> entity, String name, Class<?> type) {
-        entity.getAttributes().put(name, new DefaultAgAttribute(name, type, new ASTObjPath(name), BeanPropertyReader.reader()));
+    public static <T, V> void appendAttribute(ResourceEntity<T> entity, String name, Class<V> valueType, Function<T, V> reader) {
+        entity.addAttribute(new DefaultAgAttribute(name, valueType, new ASTObjPath(name), o -> reader.apply((T) o)), false);
     }
 }

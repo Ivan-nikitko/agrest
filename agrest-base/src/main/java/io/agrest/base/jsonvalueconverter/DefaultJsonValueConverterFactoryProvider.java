@@ -1,7 +1,11 @@
 package io.agrest.base.jsonvalueconverter;
 
-import static io.agrest.base.reflect.Types.typeForName;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.cayenne.di.DIRuntimeException;
+import org.apache.cayenne.di.Inject;
+import org.apache.cayenne.di.Provider;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -10,11 +14,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.cayenne.di.DIRuntimeException;
-import org.apache.cayenne.di.Inject;
-import org.apache.cayenne.di.Provider;
-
-import com.fasterxml.jackson.databind.JsonNode;
+import static io.agrest.base.reflect.Types.typeForName;
 
 /**
  * @since 2.10
@@ -48,6 +48,9 @@ public class DefaultJsonValueConverterFactoryProvider implements Provider<IJsonV
         converters.put(Object.class, GenericConverter.converter());
         converters.put(Float.class, FloatConverter.converter());
         converters.put(float.class, FloatConverter.converter());
+        converters.put(Double.class, DoubleConverter.converter());
+        converters.put(BigDecimal.class, BigDecimalConverter.converter());
+        converters.put(double.class, DoubleConverter.converter());
         converters.put(Long.class, LongConverter.converter());
         converters.put(long.class, LongConverter.converter());
         converters.put(Date.class, UtcDateConverter.converter());

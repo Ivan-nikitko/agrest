@@ -2,10 +2,11 @@ package io.agrest.provider;
 
 import io.agrest.AgException;
 import io.agrest.DataResponse;
-import io.agrest.it.fixture.JerseyAndPojoCase;
-import io.agrest.it.fixture.pojo.model.P1;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import io.agrest.pojo.model.P1;
+import io.agrest.unit.AgPojoTester;
+import io.agrest.unit.PojoTest;
+import io.bootique.junit5.BQTestTool;
+import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -15,18 +16,15 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-public class AgExceptionMapperIT extends JerseyAndPojoCase {
+public class AgExceptionMapperIT extends PojoTest {
 
-    @BeforeClass
-    public static void startTestRuntime() {
-        startTestRuntime(Resource.class);
-    }
+    @BQTestTool
+    static final AgPojoTester tester = tester(Resource.class).build();
 
     @Test
     public void testException() {
-        Response response = target("/p1").request().get();
-        onResponse(response)
-                .statusEquals(Response.Status.FORBIDDEN)
+        tester.target("/p1").get()
+                .wasForbidden()
                 .bodyEquals("{\"success\":false,\"message\":\"_was_forbidden_\"}");
     }
 

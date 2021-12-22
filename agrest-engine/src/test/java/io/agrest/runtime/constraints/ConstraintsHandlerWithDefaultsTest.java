@@ -12,20 +12,21 @@ import io.agrest.meta.compiler.PojoEntityCompiler;
 import io.agrest.runtime.meta.IMetadataService;
 import io.agrest.runtime.meta.MetadataService;
 import io.agrest.unit.ResourceEntityUtils;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConstraintsHandlerWithDefaultsTest {
 
     private static ConstraintsHandler constraintsHandler;
     private static IMetadataService metadata;
 
-    @BeforeClass
+    @BeforeAll
     public static void before() {
         AgEntityCompiler compiler = new PojoEntityCompiler(Collections.emptyMap());
         metadata = new MetadataService(Collections.singletonList(compiler));
@@ -46,8 +47,8 @@ public class ConstraintsHandlerWithDefaultsTest {
         Constraint<Tr> tc1 = Constraint.excludeAll(Tr.class).attributes("b");
 
         RootResourceEntity<Tr> te1 = new RootResourceEntity<>(entity, null);
-        ResourceEntityUtils.appendAttribute(te1, "a", Integer.class);
-        ResourceEntityUtils.appendAttribute(te1, "b", String.class);
+        ResourceEntityUtils.appendAttribute(te1, "a", Integer.class, Tr::getA);
+        ResourceEntityUtils.appendAttribute(te1, "b", String.class, Tr::getB);
 
         constraintsHandler.constrainResponse(te1, null, tc1);
         assertEquals(1, te1.getAttributes().size());
@@ -61,8 +62,8 @@ public class ConstraintsHandlerWithDefaultsTest {
         AgEntity<Tr> entity = metadata.getAgEntity(Tr.class);
 
         RootResourceEntity<Tr> te1 = new RootResourceEntity<>(entity, null);
-        ResourceEntityUtils.appendAttribute(te1, "a", Integer.class);
-        ResourceEntityUtils.appendAttribute(te1, "b", String.class);
+        ResourceEntityUtils.appendAttribute(te1, "a", Integer.class, Tr::getA);
+        ResourceEntityUtils.appendAttribute(te1, "b", String.class, Tr::getB);
 
         constraintsHandler.constrainResponse(te1, null, null);
         assertEquals(1, te1.getAttributes().size());
@@ -76,8 +77,8 @@ public class ConstraintsHandlerWithDefaultsTest {
         AgEntity<Ts> entity = metadata.getAgEntity(Ts.class);
 
         RootResourceEntity<Ts> te1 = new RootResourceEntity<>(entity, null);
-        ResourceEntityUtils.appendAttribute(te1, "m", String.class);
-        ResourceEntityUtils.appendAttribute(te1, "n", String.class);
+        ResourceEntityUtils.appendAttribute(te1, "m", String.class, Ts::getM);
+        ResourceEntityUtils.appendAttribute(te1, "n", String.class, Ts::getN);
 
         constraintsHandler.constrainResponse(te1, null, null);
         assertEquals(2, te1.getAttributes().size());

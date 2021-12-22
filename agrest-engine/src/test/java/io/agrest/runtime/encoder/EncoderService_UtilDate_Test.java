@@ -13,8 +13,8 @@ import io.agrest.meta.compiler.AgEntityCompiler;
 import io.agrest.meta.compiler.PojoEntityCompiler;
 import io.agrest.runtime.semantics.RelationshipMapper;
 import io.agrest.unit.ResourceEntityUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -22,7 +22,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 public class EncoderService_UtilDate_Test {
@@ -34,11 +34,11 @@ public class EncoderService_UtilDate_Test {
     private EncoderService encoderService;
     private AgEntity<PUtilDate> utilDateEntity;
 
-    @Before
+    @BeforeEach
     public void before() {
 
         this.encoderService = new EncoderService(
-                new AttributeEncoderFactory(new ValueEncodersProvider(Collections.emptyMap()).get()),
+                new EncodablePropertyFactory(new ValueEncodersProvider(Collections.emptyMap()).get()),
                 mock(IStringConverterFactory.class),
                 new RelationshipMapper(),
                 Collections.emptyMap());
@@ -67,7 +67,7 @@ public class EncoderService_UtilDate_Test {
     private void testUtilDate(java.util.Date date, String expectedPattern) {
 
         ResourceEntity<PUtilDate> re = new RootResourceEntity<>(utilDateEntity, null);
-        ResourceEntityUtils.appendAttribute(re, "date", java.util.Date.class);
+        ResourceEntityUtils.appendAttribute(re, "date", java.util.Date.class, PUtilDate::getDate);
 
         PUtilDate o = new PUtilDate();
         o.setDate(date);

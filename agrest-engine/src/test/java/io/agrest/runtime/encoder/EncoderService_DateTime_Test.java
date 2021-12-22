@@ -12,18 +12,14 @@ import io.agrest.meta.compiler.AgEntityCompiler;
 import io.agrest.meta.compiler.PojoEntityCompiler;
 import io.agrest.runtime.semantics.RelationshipMapper;
 import io.agrest.unit.ResourceEntityUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 public class EncoderService_DateTime_Test {
@@ -35,10 +31,10 @@ public class EncoderService_DateTime_Test {
 
     private EncoderService encoderService;
 
-    @Before
+    @BeforeEach
     public void before() {
         this.encoderService = new EncoderService(
-                new AttributeEncoderFactory(new ValueEncodersProvider(Collections.emptyMap()).get()),
+                new EncodablePropertyFactory(new ValueEncodersProvider(Collections.emptyMap()).get()),
                 mock(IStringConverterFactory.class),
                 new RelationshipMapper(),
                 Collections.emptyMap());
@@ -54,7 +50,7 @@ public class EncoderService_DateTime_Test {
     @Test
     public void testLocalDate() {
         ResourceEntity<PDate> re = new RootResourceEntity<>(dateEntity, null);
-        ResourceEntityUtils.appendAttribute(re, "date", LocalDate.class);
+        ResourceEntityUtils.appendAttribute(re, "date", LocalDate.class, PDate::getDate);
 
         LocalDate localDate = LocalDate.now();
 
@@ -77,7 +73,7 @@ public class EncoderService_DateTime_Test {
     private void testLocalTime(LocalTime time, String expectedPattern) {
 
         ResourceEntity<PTime> re = new RootResourceEntity<>(timeEntity, null);
-        ResourceEntityUtils.appendAttribute(re, "time", LocalTime.class);
+        ResourceEntityUtils.appendAttribute(re, "time", LocalTime.class, PTime::getTime);
 
         PTime o = new PTime();
         o.setTime(time);
@@ -98,7 +94,7 @@ public class EncoderService_DateTime_Test {
     private void testLocalDateTime(LocalDateTime dateTime, String expectedPattern) {
 
         ResourceEntity<PDateTime> re = new RootResourceEntity<>(dateTimeEntity, null);
-        ResourceEntityUtils.appendAttribute(re, "timestamp", LocalDateTime.class);
+        ResourceEntityUtils.appendAttribute(re, "timestamp", LocalDateTime.class, PDateTime::getTimestamp);
 
         PDateTime o = new PDateTime();
         o.setTimestamp(dateTime);
@@ -113,13 +109,14 @@ public class EncoderService_DateTime_Test {
         testOffsetDateTime(OffsetDateTime.of(LocalDateTime.of(2017, 1, 1, 10, 0, 0), ZoneOffset.ofHours(3)));
         testOffsetDateTime(OffsetDateTime.of(LocalDateTime.of(2017, 1, 1, 10, 0, 0, 1), ZoneOffset.ofHours(3)));
         testOffsetDateTime(OffsetDateTime.of(LocalDateTime.of(2017, 1, 1, 10, 0, 0, 999_999), ZoneOffset.ofHours(3)));
-        testOffsetDateTime(OffsetDateTime.of(LocalDateTime.of(2017, 1, 1, 10, 0, 0, 1_000_000), ZoneOffset.ofHours(3))); // millisecond is 10^6 nanoseconds
+        // millisecond is 10^6 nanoseconds
+        testOffsetDateTime(OffsetDateTime.of(LocalDateTime.of(2017, 1, 1, 10, 0, 0, 1_000_000), ZoneOffset.ofHours(3)));
     }
 
     private void testOffsetDateTime(OffsetDateTime dateTime) {
 
         ResourceEntity<POffsetDateTime> re = new RootResourceEntity<>(offsetDateTimeEntity, null);
-        ResourceEntityUtils.appendAttribute(re, "timestamp", OffsetDateTime.class);
+        ResourceEntityUtils.appendAttribute(re, "timestamp", OffsetDateTime.class, POffsetDateTime::getTimestamp);
 
         POffsetDateTime o = new POffsetDateTime();
         o.setTimestamp(dateTime);

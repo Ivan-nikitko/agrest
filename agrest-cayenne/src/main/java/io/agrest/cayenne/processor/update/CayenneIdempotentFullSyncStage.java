@@ -5,11 +5,13 @@ import io.agrest.EntityUpdate;
 import io.agrest.ObjectMapper;
 import io.agrest.ResourceEntity;
 import io.agrest.cayenne.persister.ICayennePersister;
+import io.agrest.cayenne.processor.CayenneProcessor;
 import io.agrest.cayenne.processor.CayenneUtil;
 import io.agrest.runtime.meta.IMetadataService;
 import io.agrest.runtime.processor.update.UpdateContext;
 import org.apache.cayenne.DataObject;
 import org.apache.cayenne.di.Inject;
+import org.apache.cayenne.exp.Expression;
 import org.apache.cayenne.map.EntityResolver;
 import org.apache.cayenne.query.SelectQuery;
 
@@ -61,7 +63,8 @@ public class CayenneIdempotentFullSyncStage extends CayenneIdempotentCreateOrUpd
     }
 
     <T extends DataObject> List<T> allItems(UpdateContext<T> context) {
-        buildQuery(context, context.getEntity());
+
+        buildQuery(context, context.getEntity(), null);
 
         // TODO: use SelectBuilder to get Cayenne representation of the
         // resource, instead of duplicating this here...
@@ -78,23 +81,20 @@ public class CayenneIdempotentFullSyncStage extends CayenneIdempotentCreateOrUpd
     }
 
     @Override
-    <T> SelectQuery<T> buildQuery(UpdateContext<T> context, ResourceEntity<T> entity) {
+    <T> SelectQuery<T> buildQuery(UpdateContext<T> context, ResourceEntity<T> entity, Expression qualifier) {
 
         SelectQuery<T> query = SelectQuery.query(entity.getType());
 
-        // apply various request filters identifying the span of the collection
+        if (qualifier != null) {
+            query.andQualifier(qualifier);
+        }
 
         if (context.getParent() != null) {
             EntityResolver resolver = CayenneUpdateStartStage.cayenneContext(context).getEntityResolver();
             query.andQualifier(CayenneUtil.parentQualifier(context.getParent(), resolver));
         }
 
-        if (entity.getQualifier() != null) {
-            query.andQualifier(entity.getQualifier());
-        }
-
-        entity.setSelect(query);
-
+        CayenneProcessor.setQuery(entity, query);
         buildChildrenQuery(context, entity, entity.getChildren());
 
         return query;

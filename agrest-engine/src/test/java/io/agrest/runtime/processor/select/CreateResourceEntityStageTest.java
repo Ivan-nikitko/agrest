@@ -1,54 +1,30 @@
 package io.agrest.runtime.processor.select;
 
-import io.agrest.AgException;
 import io.agrest.ResourceEntity;
 import io.agrest.annotation.AgAttribute;
 import io.agrest.annotation.AgId;
 import io.agrest.annotation.AgRelationship;
+import io.agrest.base.protocol.*;
 import io.agrest.meta.compiler.AgEntityCompiler;
 import io.agrest.meta.compiler.PojoEntityCompiler;
-import io.agrest.base.protocol.CayenneExp;
-import io.agrest.base.protocol.Dir;
-import io.agrest.base.protocol.Exclude;
-import io.agrest.base.protocol.Include;
-import io.agrest.base.protocol.Sort;
-import io.agrest.runtime.entity.CayenneExpMerger;
-import io.agrest.runtime.entity.ExcludeMerger;
-import io.agrest.runtime.entity.ExpressionParser;
-import io.agrest.runtime.entity.ExpressionPostProcessor;
-import io.agrest.runtime.entity.ICayenneExpMerger;
-import io.agrest.runtime.entity.IExcludeMerger;
-import io.agrest.runtime.entity.IIncludeMerger;
-import io.agrest.runtime.entity.IMapByMerger;
-import io.agrest.runtime.entity.ISizeMerger;
-import io.agrest.runtime.entity.ISortMerger;
-import io.agrest.runtime.entity.IncludeMerger;
-import io.agrest.runtime.entity.MapByMerger;
-import io.agrest.runtime.entity.SizeMerger;
-import io.agrest.runtime.entity.SortMerger;
+import io.agrest.runtime.entity.*;
 import io.agrest.runtime.meta.IMetadataService;
 import io.agrest.runtime.meta.MetadataService;
-import io.agrest.runtime.path.IPathDescriptorManager;
-import io.agrest.runtime.path.PathDescriptorManager;
 import io.agrest.runtime.protocol.ICayenneExpParser;
 import io.agrest.runtime.protocol.IExcludeParser;
 import io.agrest.runtime.protocol.IIncludeParser;
 import io.agrest.runtime.protocol.ISortParser;
 import io.agrest.runtime.request.DefaultRequestBuilderFactory;
 import io.agrest.runtime.request.IAgRequestBuilderFactory;
-import org.apache.cayenne.query.Ordering;
-import org.apache.cayenne.query.SortOrder;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
-import static org.apache.cayenne.exp.ExpressionFactory.exp;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -57,17 +33,15 @@ public class CreateResourceEntityStageTest {
     private static CreateResourceEntityStage stage;
     private static IAgRequestBuilderFactory requestBuilderFactory;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeAll() {
 
         AgEntityCompiler compiler = new PojoEntityCompiler(Collections.emptyMap());
         MetadataService metadataService = new MetadataService(Collections.singletonList(compiler));
 
-        IPathDescriptorManager pathCache = new PathDescriptorManager();
-
         // prepare create entity stage
-        ICayenneExpMerger expMerger = new CayenneExpMerger(new ExpressionParser(), new ExpressionPostProcessor(pathCache));
-        ISortMerger sortMerger = new SortMerger(pathCache);
+        ICayenneExpMerger expMerger = new CayenneExpMerger();
+        ISortMerger sortMerger = new SortMerger();
         IMapByMerger mapByMerger = new MapByMerger(mock(IMetadataService.class));
         ISizeMerger sizeMerger = new SizeMerger();
         IIncludeMerger includeMerger = new IncludeMerger(mock(IMetadataService.class), expMerger, sortMerger, mapByMerger, sizeMerger);
@@ -349,9 +323,8 @@ public class CreateResourceEntityStageTest {
         ResourceEntity<Ts> resourceEntity = context.getEntity();
 
         assertEquals(1, resourceEntity.getOrderings().size());
-        Ordering o1 = resourceEntity.getOrderings().iterator().next();
-        assertEquals(SortOrder.ASCENDING, o1.getSortOrder());
-        assertEquals("n", o1.getSortSpecString());
+        Sort o1 = resourceEntity.getOrderings().iterator().next();
+        assertEquals(new Sort("n", Dir.ASC), o1);
     }
 
     @Test
@@ -368,9 +341,8 @@ public class CreateResourceEntityStageTest {
         ResourceEntity<Ts> resourceEntity = context.getEntity();
 
         assertEquals(1, resourceEntity.getOrderings().size());
-        Ordering o1 = resourceEntity.getOrderings().iterator().next();
-        assertEquals(SortOrder.ASCENDING, o1.getSortOrder());
-        assertEquals("n", o1.getSortSpecString());
+        Sort o1 = resourceEntity.getOrderings().iterator().next();
+        assertEquals(new Sort("n", Dir.ASC), o1);
     }
 
     @Test
@@ -387,9 +359,8 @@ public class CreateResourceEntityStageTest {
         ResourceEntity<Ts> resourceEntity = context.getEntity();
 
         assertEquals(1, resourceEntity.getOrderings().size());
-        Ordering o1 = resourceEntity.getOrderings().iterator().next();
-        assertEquals(SortOrder.DESCENDING, o1.getSortOrder());
-        assertEquals("n", o1.getSortSpecString());
+        Sort o1 = resourceEntity.getOrderings().iterator().next();
+        assertEquals(new Sort("n", Dir.DESC), o1);
     }
 
     @Test
@@ -406,60 +377,35 @@ public class CreateResourceEntityStageTest {
         ResourceEntity<Ts> resourceEntity = context.getEntity();
 
         assertEquals(2, resourceEntity.getOrderings().size());
-        Iterator<Ordering> it = resourceEntity.getOrderings().iterator();
-        Ordering o1 = it.next();
-        Ordering o2 = it.next();
-        assertEquals(SortOrder.DESCENDING, o1.getSortOrder());
-        assertEquals("m", o1.getSortSpecString());
-        assertEquals(SortOrder.ASCENDING, o2.getSortOrder());
-        assertEquals("n", o2.getSortSpecString());
+        assertEquals(new Sort("m", Dir.DESC), resourceEntity.getOrderings().get(0));
+        assertEquals(new Sort("n", Dir.ASC), resourceEntity.getOrderings().get(1));
     }
 
+    @Deprecated
     @Test
-    public void testExecute_Sort_Dupes() {
-
-        SelectContext<Ts> context = new SelectContext<>(Ts.class);
-
-        context.setMergedRequest(requestBuilderFactory
-                .builder()
-                .addOrdering(new Sort("n", Dir.DESC))
-                .addOrdering(new Sort("n", Dir.ASC)).build());
-
-        stage.execute(context);
-
-        ResourceEntity<Ts> resourceEntity = context.getEntity();
-
-        assertEquals(1, resourceEntity.getOrderings().size());
-        Iterator<Ordering> it = resourceEntity.getOrderings().iterator();
-        Ordering o1 = it.next();
-        assertEquals(SortOrder.DESCENDING, o1.getSortOrder());
-        assertEquals("n", o1.getSortSpecString());
-    }
-
-    @Test(expected = AgException.class)
     public void testExecute_CayenneExp_BadSpec() {
 
         SelectContext<Ts> context = new SelectContext<>(Ts.class);
         context.setMergedRequest(requestBuilderFactory
                 .builder()
-                .cayenneExp(new CayenneExp("x = 12345 and y = 'John Smith' and z = true")).build());
+                .cayenneExp(CayenneExp.simple("x = 12345 and y = 'John Smith' and z = true")).build());
 
-        stage.execute(context);
+        assertDoesNotThrow(() -> stage.execute(context), "Even though the passed spec is invalid, no parsing should occur at this stage");
     }
 
+    @Deprecated
     @Test
     public void testExecute_CayenneExp() {
 
         SelectContext<Ts> context = new SelectContext<>(Ts.class);
         context.setMergedRequest(requestBuilderFactory
                 .builder()
-                .cayenneExp(new CayenneExp("m = 'John Smith'")).build());
+                .cayenneExp(CayenneExp.simple("m = 'John Smith'")).build());
 
         stage.execute(context);
 
         ResourceEntity<Ts> resourceEntity = context.getEntity();
-        assertNotNull(resourceEntity.getQualifier());
-        assertEquals(exp("m = 'John Smith'"), resourceEntity.getQualifier());
+        assertEquals(CayenneExp.simple("m = 'John Smith'"), resourceEntity.getQualifier());
     }
 
     public static class Tr {

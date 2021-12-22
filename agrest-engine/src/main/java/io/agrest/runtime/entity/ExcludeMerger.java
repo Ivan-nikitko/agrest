@@ -3,8 +3,8 @@ package io.agrest.runtime.entity;
 import io.agrest.AgException;
 import io.agrest.PathConstants;
 import io.agrest.ResourceEntity;
-import io.agrest.meta.AgEntity;
 import io.agrest.base.protocol.Exclude;
+import io.agrest.meta.AgEntity;
 
 import javax.ws.rs.core.Response.Status;
 import java.util.List;
@@ -12,13 +12,25 @@ import java.util.List;
 public class ExcludeMerger implements IExcludeMerger {
 
     @Override
-    public void merge(ResourceEntity<?> resourceEntity, List<Exclude> excludes) {
-        for (Exclude exclude : excludes) {
-            processExcludePath(resourceEntity, exclude.getPath());
-        }
+    public void merge(ResourceEntity<?> entity, List<Exclude> excludes) {
+        processRequestExcludes(entity, excludes);
+        processOverlayExcludes(entity);
     }
 
-    private void processExcludePath(ResourceEntity<?> resourceEntity, String path) {
+    private void processRequestExcludes(ResourceEntity<?> entity, List<Exclude> excludes) {
+        excludes.forEach(e -> excludePath(entity, e.getPath()));
+    }
+
+    private void processOverlayExcludes(ResourceEntity<?> entity) {
+
+        if (entity.getAgEntityOverlay() != null) {
+            entity.getAgEntityOverlay().getExcludes().forEach(e -> exclude(entity, e));
+        }
+
+        entity.getChildren().values().forEach(this::processOverlayExcludes);
+    }
+
+    private void excludePath(ResourceEntity<?> entity, String path) {
 
         int dot = path.indexOf(PathConstants.DOT);
 
@@ -30,50 +42,64 @@ public class ExcludeMerger implements IExcludeMerger {
             throw new AgException(Status.BAD_REQUEST, "Exclude ends with dot: " + path);
         }
 
-        String property = dot > 0 ? path.substring(0, dot) : path;
-        AgEntity<?> entity = resourceEntity.getAgEntity();
-
-        if (dot < 0) {
-
-            if (resourceEntity.getIncludedExtraProperties().remove(property) != null) {
-                return;
-            }
-
-            if (resourceEntity.getAttributes().remove(property) != null) {
-                return;
-            }
+        if (dot >= 0) {
+            excludeNonLeafPath(entity, path, dot);
+        } else {
+            excludeLeafPath(entity, path);
         }
+    }
 
-        if (entity.getRelationship(property) != null) {
+    private void excludeLeafPath(ResourceEntity<?> entity, String path) {
 
-            // TODO: I guess we are not removing the relationships based on the assumption that they are not included
-            //  by default and an exclude shouldn't be needed. But this is too much second-guessing the caller.
+        boolean wasExcluded = exclude(entity, path);
 
-            ResourceEntity<?> relatedFilter = resourceEntity.getChild(property);
-            if (relatedFilter == null) {
-                // valid path, but not included... ignoring
-                return;
-            }
-
-            if (dot > 0) {
-                processExcludePath(relatedFilter, path.substring(dot + 1));
-            }
-
-            return;
-        }
-
-        // this is an entity id and it's excluded explicitly
-        if (property.equals(PathConstants.ID_PK_ATTRIBUTE)) {
-            resourceEntity.excludeId();
-            return;
-        }
-
-        // the property was either not included or is invalid... throw in the latter case for symmetry with "include"
-        if (entity.getAttribute(property) == null
-                && !resourceEntity.getExtraProperties().containsKey(property)
-            // not checking relationship names; the condition above does it already...
-        ) {
+        if (!wasExcluded && !isValidProperty(entity.getAgEntity(), path)) {
+            // throw when the property is invalid (and not simply not included) for symmetry with "include"
             throw new AgException(Status.BAD_REQUEST, "Invalid exclude path: " + path);
         }
+    }
+
+    private void excludeNonLeafPath(ResourceEntity<?> entity, String path, int dot) {
+        String property = path.substring(0, dot);
+
+        ResourceEntity<?> child = entity.getChild(property);
+        // child may be null for a valid path that was not included...
+        if (child != null) {
+            excludePath(child, path.substring(dot + 1));
+        }
+    }
+
+    private boolean exclude(ResourceEntity<?> entity, String name) {
+
+        if (entity.removeAttribute(name) != null) {
+            return true;
+        }
+
+        if (entity.removeChild(name) != null) {
+            return true;
+        }
+
+        if (name.equals(PathConstants.ID_PK_ATTRIBUTE)) {
+            entity.excludeId();
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean isValidProperty(AgEntity<?> entity, String name) {
+        if (entity.getAttribute(name) != null) {
+            return true;
+        }
+
+        if (entity.getRelationship(name) != null) {
+            return true;
+        }
+
+        if (name.equals(PathConstants.ID_PK_ATTRIBUTE)) {
+            return true;
+        }
+
+        return false;
     }
 }

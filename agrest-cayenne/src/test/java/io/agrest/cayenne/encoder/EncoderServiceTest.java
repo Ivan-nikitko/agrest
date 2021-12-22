@@ -1,49 +1,43 @@
 package io.agrest.cayenne.encoder;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import io.agrest.DataResponse;
-import io.agrest.NestedResourceEntity;
-import io.agrest.ResourceEntity;
-import io.agrest.RootResourceEntity;
-import io.agrest.SimpleObjectId;
-import io.agrest.cayenne.unit.TestWithCayenneMapping;
+import io.agrest.*;
+import io.agrest.cayenne.unit.CayenneNoDbTest;
 import io.agrest.encoder.Encoder;
 import io.agrest.encoder.Encoders;
 import io.agrest.encoder.EntityEncoderFilter;
-import io.agrest.it.fixture.cayenne.E1;
-import io.agrest.it.fixture.cayenne.E19;
-import io.agrest.it.fixture.cayenne.E2;
-import io.agrest.it.fixture.cayenne.E3;
-import io.agrest.runtime.encoder.AttributeEncoderFactory;
-import io.agrest.runtime.encoder.EncoderService;
-import io.agrest.runtime.encoder.IAttributeEncoderFactory;
-import io.agrest.runtime.encoder.IStringConverterFactory;
-import io.agrest.runtime.encoder.ValueEncodersProvider;
+import io.agrest.cayenne.cayenne.main.E1;
+import io.agrest.cayenne.cayenne.main.E19;
+import io.agrest.cayenne.cayenne.main.E2;
+import io.agrest.cayenne.cayenne.main.E3;
+import io.agrest.runtime.encoder.*;
 import io.agrest.runtime.semantics.RelationshipMapper;
+import io.agrest.unit.ResourceEntityUtils;
 import org.apache.cayenne.Cayenne;
 import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.ObjectId;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
-public class EncoderServiceTest extends TestWithCayenneMapping {
+public class EncoderServiceTest extends CayenneNoDbTest {
 
     private EncoderService encoderService;
 
-    @Before
+    @BeforeEach
     public void before() {
-        IAttributeEncoderFactory aef = new AttributeEncoderFactory(new ValueEncodersProvider(Collections.emptyMap()).get());
+        IEncodablePropertyFactory epf = new EncodablePropertyFactory(new ValueEncodersProvider(Collections.emptyMap()).get());
         IStringConverterFactory stringConverterFactory = mock(IStringConverterFactory.class);
 
         encoderService = new EncoderService(
-                aef,
+                epf,
                 stringConverterFactory,
                 new RelationshipMapper(),
                 Collections.emptyMap());
@@ -72,7 +66,7 @@ public class EncoderServiceTest extends TestWithCayenneMapping {
 
         NestedResourceEntity<E3> e3Descriptor = getChildResourceEntity(E3.class, descriptor, E2.E3S.getName());
         e3Descriptor.includeId();
-        appendAttribute(e3Descriptor, E3.NAME, String.class);
+        ResourceEntityUtils.appendAttribute(e3Descriptor, "name", String.class, E3::getName);
 
         descriptor.getChildren().put(E2.E3S.getName(), e3Descriptor);
 
@@ -288,10 +282,7 @@ public class EncoderServiceTest extends TestWithCayenneMapping {
 
         ResourceEntity<E19> descriptor = getResourceEntity(E19.class);
         descriptor.includeId();
-        descriptor.getAttributes().put(
-                E19.GUID.getName(),
-                getAgEntity(E19.class).getAttribute(E19.GUID.getName())
-        );
+        descriptor.addAttribute(getAgEntity(E19.class).getAttribute(E19.GUID.getName()), false);
 
         E19 e19 = new E19();
         e19.setObjectId(new ObjectId("E19", E19.ID_PK_COLUMN, 1));

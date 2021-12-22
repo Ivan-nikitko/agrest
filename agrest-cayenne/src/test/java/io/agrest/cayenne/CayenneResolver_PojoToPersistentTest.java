@@ -1,15 +1,15 @@
 package io.agrest.cayenne;
 
-import io.agrest.cayenne.unit.TestWithCayenneMapping;
-import io.agrest.it.fixture.cayenne.E25;
-import io.agrest.it.fixture.pojox.PX1;
-import io.agrest.it.fixture.pojox.PX1RootResolver;
+import io.agrest.cayenne.unit.CayenneNoDbTest;
+import io.agrest.cayenne.cayenne.main.E25;
+import io.agrest.pojo.model.PX1;
+import io.agrest.pojo.runtime.PX1RootResolver;
 import io.agrest.meta.AgEntity;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class CayenneResolver_PojoToPersistentTest extends TestWithCayenneMapping {
+public class CayenneResolver_PojoToPersistentTest extends CayenneNoDbTest {
 
     @Test
     public void testFail_nestedViaQueryWithParentIds() {
@@ -18,7 +18,7 @@ public class CayenneResolver_PojoToPersistentTest extends TestWithCayenneMapping
                     .overlay(PX1.class)
                     .redefineRootDataResolver(new PX1RootResolver())
                     // Cayenne resolver will fail as the parent is not a Cayenne object
-                    .redefineToOne("overlayToOne", E25.class, CayenneResolvers.nested(mockCayennePersister).viaQueryWithParentIds());
+                    .redefineToOne("overlayToOne", E25.class, CayenneResolvers.nested(mockCayennePersister, queryAssembler).viaQueryWithParentIds());
 
             fail("Must have failed");
         } catch (IllegalStateException e) {
@@ -35,7 +35,7 @@ public class CayenneResolver_PojoToPersistentTest extends TestWithCayenneMapping
                     .overlay(PX1.class)
                     .redefineRootDataResolver(new PX1RootResolver())
                     // Cayenne resolver will fail as the parent is not a Cayenne object
-                    .redefineToOne("overlayToOne", E25.class, CayenneResolvers.nested(mockCayennePersister).viaQueryWithParentExp());
+                    .redefineToOne("overlayToOne", E25.class, CayenneResolvers.nested(mockCayennePersister, queryAssembler).viaQueryWithParentExp());
 
             fail("Must have failed");
         } catch (IllegalStateException e) {
@@ -52,7 +52,7 @@ public class CayenneResolver_PojoToPersistentTest extends TestWithCayenneMapping
                     .overlay(PX1.class)
                     .redefineRootDataResolver(new PX1RootResolver())
                     // Cayenne resolver will fail as the parent is not a Cayenne object
-                    .redefineToOne("overlayToOne", E25.class, CayenneResolvers.nested(mockCayennePersister).viaParentPrefetch());
+                    .redefineToOne("overlayToOne", E25.class, CayenneResolvers.nested(mockCayennePersister, queryAssembler).viaParentPrefetch());
 
             fail("Must have failed");
         } catch (IllegalStateException e) {

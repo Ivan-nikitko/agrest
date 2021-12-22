@@ -1,7 +1,6 @@
 package io.agrest.encoder;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import io.agrest.EntityProperty;
 
 import java.io.IOException;
 import java.util.Map;
@@ -12,13 +11,12 @@ import java.util.TreeMap;
  */
 public class EntityNoIdEncoder extends AbstractEncoder {
 
-    private Map<String, EntityProperty> relationshipEncoders;
-    private Map<String, EntityProperty> combinedEncoders;
+    private Map<String, EncodableProperty> relationshipEncoders;
+    private Map<String, EncodableProperty> combinedEncoders;
 
     public EntityNoIdEncoder(
-            Map<String, EntityProperty> attributeEncoders,
-            Map<String, EntityProperty> relationshipEncoders,
-            Map<String, EntityProperty> extraEncoders) {
+            Map<String, EncodableProperty> attributeEncoders,
+            Map<String, EncodableProperty> relationshipEncoders) {
 
         // tracking relationship encoders separately for the sake of the visitors
         this.relationshipEncoders = relationshipEncoders;
@@ -26,7 +24,6 @@ public class EntityNoIdEncoder extends AbstractEncoder {
         this.combinedEncoders = new TreeMap<>();
         combinedEncoders.putAll(attributeEncoders);
         combinedEncoders.putAll(relationshipEncoders);
-        combinedEncoders.putAll(extraEncoders);
     }
 
     @Override
@@ -40,10 +37,10 @@ public class EntityNoIdEncoder extends AbstractEncoder {
 
     protected void encodeProperties(Object object, JsonGenerator out) throws IOException {
 
-        for (Map.Entry<String, EntityProperty> e : combinedEncoders.entrySet()) {
-            EntityProperty p = e.getValue();
+        for (Map.Entry<String, EncodableProperty> e : combinedEncoders.entrySet()) {
+            EncodableProperty p = e.getValue();
             String propertyName = e.getKey();
-            Object v = object == null ? null : p.getReader().value(object, propertyName);
+            Object v = object == null ? null : p.getReader().value(object);
             p.getEncoder().encode(propertyName, v, out);
         }
     }
@@ -63,11 +60,11 @@ public class EntityNoIdEncoder extends AbstractEncoder {
 
         if ((bitmask & VISIT_SKIP_CHILDREN) == 0) {
 
-            for (Map.Entry<String, EntityProperty> e : relationshipEncoders.entrySet()) {
+            for (Map.Entry<String, EncodableProperty> e : relationshipEncoders.entrySet()) {
 
                 visitor.push(e.getKey());
 
-                int propBitmask = e.getValue().visit(object, e.getKey(), visitor);
+                int propBitmask = e.getValue().visit(object, visitor);
 
                 if ((propBitmask & VISIT_SKIP_ALL) != 0) {
                     return VISIT_SKIP_ALL;

@@ -12,8 +12,8 @@ import io.agrest.meta.compiler.AgEntityCompiler;
 import io.agrest.meta.compiler.PojoEntityCompiler;
 import io.agrest.runtime.semantics.RelationshipMapper;
 import io.agrest.unit.ResourceEntityUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.sql.Date;
 import java.sql.Time;
@@ -24,7 +24,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 public class EncoderService_SqlDateTime_Test {
@@ -36,11 +36,11 @@ public class EncoderService_SqlDateTime_Test {
     private EncoderService encoderService;
     private AgEntity<PSqlDateTime> sqlDateTimeEntity;
 
-    @Before
+    @BeforeEach
     public void before() {
 
         this.encoderService = new EncoderService(
-                new AttributeEncoderFactory(new ValueEncodersProvider(Collections.emptyMap()).get()),
+                new EncodablePropertyFactory(new ValueEncodersProvider(Collections.emptyMap()).get()),
                 mock(IStringConverterFactory.class),
                 new RelationshipMapper(),
                 Collections.emptyMap());
@@ -56,7 +56,7 @@ public class EncoderService_SqlDateTime_Test {
     @Test
     public void testJavaSqlDate() {
         ResourceEntity<PSqlDateTime> re = new RootResourceEntity<>(sqlDateTimeEntity, null);
-        ResourceEntityUtils.appendAttribute(re, "date", Date.class);
+        ResourceEntityUtils.appendAttribute(re, "date", Date.class, PSqlDateTime::getDate);
         Date date = new Date(EPOCH_MILLIS);
 
         PSqlDateTime o = new PSqlDateTime();
@@ -77,7 +77,7 @@ public class EncoderService_SqlDateTime_Test {
 
     private void _testISOTimeEncoder_javaSqlTime(java.sql.Time time, String expectedPattern) {
         ResourceEntity<PSqlDateTime> re = new RootResourceEntity<>(sqlDateTimeEntity, null);
-        ResourceEntityUtils.appendAttribute(re, "time", Time.class);
+        ResourceEntityUtils.appendAttribute(re, "time", Time.class, PSqlDateTime::getTime);
 
         PSqlDateTime o = new PSqlDateTime();
         o.setTime(time);
@@ -98,7 +98,7 @@ public class EncoderService_SqlDateTime_Test {
     private void _testISODateTimeEncoder_javaSqlTimestamp(java.sql.Timestamp timestamp, String expectedPattern) {
 
         ResourceEntity<PSqlDateTime> re = new RootResourceEntity<>(sqlDateTimeEntity, null);
-        ResourceEntityUtils.appendAttribute(re, "timestamp", Timestamp.class);
+        ResourceEntityUtils.appendAttribute(re, "timestamp", Timestamp.class, PSqlDateTime::getTimestamp);
 
         PSqlDateTime o = new PSqlDateTime();
         o.setTimestamp(timestamp);

@@ -83,24 +83,18 @@ public class IncludeMerger implements IIncludeMerger {
     }
 
     private void processDefaultIncludes(ResourceEntity<?> resourceEntity) {
-        if (!resourceEntity.isIdIncluded()
-                && resourceEntity.getAttributes().isEmpty()
-                && resourceEntity.getIncludedExtraProperties().isEmpty()) {
+        if (!resourceEntity.isIdIncluded() && resourceEntity.getAttributes().isEmpty()) {
 
             for (AgAttribute a : resourceEntity.getAgEntity().getAttributes()) {
-                resourceEntity.getAttributes().put(a.getName(), a);
-                resourceEntity.getDefaultProperties().add(a.getName());
+                resourceEntity.addAttribute(a, true);
             }
 
             if (resourceEntity.getAgEntityOverlay() != null) {
                 for (AgAttribute a : resourceEntity.getAgEntityOverlay().getAttributes()) {
-                    resourceEntity.getAttributes().put(a.getName(), a);
-                    resourceEntity.getDefaultProperties().add(a.getName());
+                    resourceEntity.addAttribute(a, true);
                 }
             }
 
-            resourceEntity.getIncludedExtraProperties().putAll(resourceEntity.getExtraProperties());
-            resourceEntity.getDefaultProperties().addAll(resourceEntity.getExtraProperties().keySet());
             resourceEntity.includeId();
         }
     }

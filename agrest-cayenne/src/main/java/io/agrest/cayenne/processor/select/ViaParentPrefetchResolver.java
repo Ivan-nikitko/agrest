@@ -4,10 +4,12 @@ import io.agrest.NestedResourceEntity;
 import io.agrest.ResourceEntity;
 import io.agrest.RootResourceEntity;
 import io.agrest.cayenne.compiler.DataObjectPropertyReader;
+import io.agrest.cayenne.processor.CayenneProcessor;
 import io.agrest.property.PropertyReader;
 import io.agrest.resolver.BaseNestedDataResolver;
 import io.agrest.runtime.processor.select.SelectContext;
 import org.apache.cayenne.DataObject;
+import org.apache.cayenne.query.SelectQuery;
 
 /**
  * A resolver that doesn't run its own queries, but instead amends parent node query with prefetch spec, so that the
@@ -48,8 +50,9 @@ public class ViaParentPrefetchResolver extends BaseNestedDataResolver<DataObject
         String path = outgoingPath != null ? incomingPath + "." + outgoingPath : incomingPath;
 
         ResourceEntity<?> parent = entity.getParent();
-        if (parent.getSelect() != null) {
-            parent.getSelect().addPrefetch(path).setSemantics(prefetchSemantics);
+        SelectQuery<?> parentSelect = CayenneProcessor.getQuery(parent);
+        if (parentSelect != null) {
+            parentSelect.addPrefetch(path).setSemantics(prefetchSemantics);
             return;
         }
 
@@ -67,7 +70,7 @@ public class ViaParentPrefetchResolver extends BaseNestedDataResolver<DataObject
         // TODO: what about multi-step prefetches? How do we locate parent then?
 
         // assuming the parent is a DataObject. CayenneNestedDataResolverBuilder ensures that it is
-        return DataObjectPropertyReader.reader();
+        return DataObjectPropertyReader.reader(entity.getIncoming().getName());
     }
 
     protected Iterable<DataObject> dataIterable(NestedResourceEntity<DataObject> entity, Iterable<? extends DataObject> parentData) {

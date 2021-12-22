@@ -1,7 +1,6 @@
 package io.agrest.encoder;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import io.agrest.EntityProperty;
 import io.agrest.PathConstants;
 
 import java.io.IOException;
@@ -9,15 +8,14 @@ import java.util.Map;
 
 public class EntityEncoder extends EntityNoIdEncoder {
 
-    private EntityProperty idProperty;
+    private EncodableProperty idProperty;
 
     public EntityEncoder(
-            EntityProperty idProperty,
-            Map<String, EntityProperty> attributeEncoders,
-            Map<String, EntityProperty> relationshipEncoders,
-            Map<String, EntityProperty> extraEncoders) {
+            EncodableProperty idProperty,
+            Map<String, EncodableProperty> attributeEncoders,
+            Map<String, EncodableProperty> relationshipEncoders) {
 
-        super(attributeEncoders, relationshipEncoders, extraEncoders);
+        super(attributeEncoders, relationshipEncoders);
         this.idProperty = idProperty;
     }
 
@@ -27,7 +25,7 @@ public class EntityEncoder extends EntityNoIdEncoder {
     }
 
     protected void encodeId(Object object, JsonGenerator out) throws IOException {
-        Object v = object == null ? null : idProperty.getReader().value(object, PathConstants.ID_PK_ATTRIBUTE);
+        Object v = object == null ? null : idProperty.getReader().value(object);
         idProperty.getEncoder().encode(PathConstants.ID_PK_ATTRIBUTE, v, out);
     }
 }

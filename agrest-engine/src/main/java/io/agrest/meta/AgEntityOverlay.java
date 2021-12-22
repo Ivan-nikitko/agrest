@@ -1,18 +1,10 @@
 package io.agrest.meta;
 
-import io.agrest.base.reflect.BeanAnalyzer;
-import io.agrest.base.reflect.PropertyGetter;
 import io.agrest.property.PropertyReader;
-import io.agrest.resolver.NestedDataResolver;
-import io.agrest.resolver.NestedDataResolverFactory;
-import io.agrest.resolver.ReaderBasedResolver;
-import io.agrest.resolver.RootDataResolver;
-import io.agrest.resolver.RootDataResolverFactory;
+import io.agrest.resolver.*;
 import org.apache.cayenne.exp.parser.ASTObjPath;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -24,44 +16,45 @@ import java.util.function.Function;
  */
 public class AgEntityOverlay<T> {
 
-    private Class<T> type;
+    private final Class<T> type;
     //  TODO: introduce AgAttributeOverride to allow for partial overrides, like changing a reader
-    private Map<String, AgAttribute> attributes;
-    private Map<String, AgRelationshipOverlay> relationships;
+    private final Map<String, AgAttribute> attributes;
+    private final Map<String, AgRelationshipOverlay> relationships;
+    private final List<String> excludes;
     private RootDataResolver<T> rootDataResolver;
-
-    @Deprecated
-    private Map<String, PropertyGetter> typeGetters;
 
     public AgEntityOverlay(Class<T> type) {
         this.type = type;
         this.attributes = new HashMap<>();
         this.relationships = new HashMap<>();
+        this.excludes = new ArrayList<>(2);
     }
 
-    // lose generics ... PropertyReader is not parameterized
-    private static PropertyReader asPropertyReader(Function reader) {
-        return (o, n) -> reader.apply(o);
+    private static PropertyReader fromFunction(Function<?, ?> f) {
+        // lose generics. PropertyReader is not parameterized
+        Function fx = f;
+        return fx::apply;
     }
 
     private static <T> NestedDataResolver<T> resolverForReader(Function<?, T> reader) {
-        // lose generics. PropertyReader is not parameterized
-        Function plainReader = reader;
-        return new ReaderBasedResolver<>((o, n) -> plainReader.apply(o));
+        return new ReaderBasedResolver<>(fromFunction(reader));
     }
 
     static <T> NestedDataResolver<T> resolverForListReader(Function<?, List<T>> reader) {
-        // lose generics. PropertyReader is not parameterized
-        Function plainReader = reader;
-        return new ReaderBasedResolver<>((o, n) -> plainReader.apply(o));
+        return new ReaderBasedResolver<>(fromFunction(reader));
     }
 
     /**
+     * Combines this overlay with another overlay. This overlay is modified, loading overlaid properties and
+     * resolvers from another overlay.
+     *
+     * @return this overlay
      * @since 2.10
      */
     public AgEntityOverlay<T> merge(AgEntityOverlay<T> anotherOverlay) {
         attributes.putAll(anotherOverlay.attributes);
         relationships.putAll(anotherOverlay.relationships);
+        excludes.addAll(anotherOverlay.excludes);
         if (anotherOverlay.getRootDataResolver() != null) {
             this.rootDataResolver = anotherOverlay.getRootDataResolver();
         }
@@ -107,50 +100,22 @@ public class AgEntityOverlay<T> {
         return rootDataResolver;
     }
 
-    private Map<String, PropertyGetter> getTypeGetters() {
-
-        // compile getters map lazily, only when the caller adds attributes that require getters
-        if (this.typeGetters == null) {
-            Map<String, PropertyGetter> getters = new HashMap<>();
-
-            // TODO: this is expensive, and since #422 this may be called per-request..
-            //  Need either a stack-scoped caching strategy or deprecating the caller - "addAttribute"
-            BeanAnalyzer.findGetters(type).forEach(pm -> getters.put(pm.getName(), pm));
-
-            this.typeGetters = getters;
-        }
-
-        return typeGetters;
-    }
-
     /**
-     * Adds an attribute to the overlaid entity. Type and value reader are determined via class introspection, so this
-     * method may be quite slow. Consider using {@link #redefineAttribute(String, Class, Function)} instead.
+     * Removes a named property (attribute or relationship) from overlaid AgEntity.
      *
-     * @since 2.10
-     * @deprecated since 3.4 in favor of {@link #redefineAttribute(String, Class, Function)}, as this method does class
-     * introspection and can be really slow.
+     * @return this overlay instance
+     * @since 3.7
      */
-    @Deprecated
-    public AgEntityOverlay<T> addAttribute(String name) {
-
-        PropertyGetter getter = getTypeGetters().get(name);
-
-        if (getter == null) {
-            throw new IllegalArgumentException("'" + name + "' is not a readable property in " + type.getName());
-        }
-
-        Class vType = getter.getType();
-        redefineAttribute(name, vType, getter::getValue);
+    public AgEntityOverlay<T> exclude(String... properties) {
+        Collections.addAll(excludes, properties);
         return this;
     }
 
     /**
-     * @deprecated since 3.4 in favor for {@link #redefineAttribute(String, Class, Function)}.
+     * @since 3.7
      */
-    @Deprecated
-    public <V> AgEntityOverlay<T> addAttribute(String name, Class<V> valueType, Function<T, V> reader) {
-        return redefineAttribute(name, valueType, reader);
+    public Iterable<String> getExcludes() {
+        return excludes;
     }
 
     /**
@@ -159,7 +124,7 @@ public class AgEntityOverlay<T> {
      * @since 3.4
      */
     public <V> AgEntityOverlay<T> redefineAttribute(String name, Class<V> valueType, Function<T, V> reader) {
-        attributes.put(name, new DefaultAgAttribute(name, valueType, new ASTObjPath(name), asPropertyReader(reader)));
+        attributes.put(name, new DefaultAgAttribute(name, valueType, new ASTObjPath(name), fromFunction(reader)));
         return this;
     }
 
@@ -232,22 +197,6 @@ public class AgEntityOverlay<T> {
     public <V> AgEntityOverlay<T> redefineToMany(String name, Class<V> targetType, Function<T, List<V>> reader) {
         relationships.put(name, new FullRelationshipOverlay(name, targetType, true, resolverForListReader(reader)));
         return this;
-    }
-
-    /**
-     * @deprecated since 3.4 in favor of {@link #redefineToOne(String, Class, Function)}
-     */
-    @Deprecated
-    public <V> AgEntityOverlay<T> addToOneRelationship(String name, Class<V> targetType, Function<T, V> reader) {
-        return redefineToOne(name, targetType, reader);
-    }
-
-    /**
-     * @deprecated since 3.4 in favor of {@link #redefineToMany(String, Class, Function)}
-     */
-    @Deprecated
-    public <V> AgEntityOverlay<T> addToManyRelationship(String name, Class<V> targetType, Function<T, List<V>> reader) {
-        return redefineToMany(name, targetType, reader);
     }
 
     /**

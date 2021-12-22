@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.agrest</groupId>
         <artifactId>agrest-parent</artifactId>
-        <version>3.6-SNAPSHOT</version>
+        <version>3.12-SNAPSHOT</version>
     </parent>
 
     <artifactId>agrest-engine</artifactId>
@@ -25,7 +25,7 @@
             <artifactId>agrest-annotations</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- Unfortinately there are still Cayenne dependencies related to DI, Expressions, etc.
+        <!-- Unfortunately there are still Cayenne dependencies related to DI, Expressions, etc.
         TODO: remove this when we can. -->
         <dependency>
             <groupId>org.apache.cayenne</groupId>
@@ -35,18 +35,13 @@
 
         <!-- unit test deps -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.bootique</groupId>
-            <artifactId>bootique-test</artifactId>
+            <groupId>io.bootique.jetty</groupId>
+            <artifactId>bootique-jetty-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

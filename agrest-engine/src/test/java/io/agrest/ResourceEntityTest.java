@@ -1,25 +1,25 @@
 package io.agrest;
 
-import io.agrest.it.fixture.pojo.model.P1;
+import io.agrest.base.protocol.CayenneExp;
 import io.agrest.meta.AgEntity;
-import org.apache.cayenne.exp.ExpressionFactory;
-import org.junit.Test;
+import io.agrest.pojo.model.P1;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 public class ResourceEntityTest {
 
-	@Test
-	public void testQualifier() {
-		@SuppressWarnings("unchecked")
-		ResourceEntity<P1> p1 = new RootResourceEntity<>(mock(AgEntity.class), null);
-		assertNull(p1.getQualifier());
+    @Test
+    public void testQualifier() {
+        @SuppressWarnings("unchecked")
+        ResourceEntity<P1> e = new RootResourceEntity<>(mock(AgEntity.class), null);
+        assertNull(e.getQualifier());
 
-		p1.andQualifier(ExpressionFactory.exp("a = 1"));
-		assertEquals("a = 1", p1.getQualifier().toString());
+        e.andQualifier(CayenneExp.simple("a = 1"));
+        assertEquals(CayenneExp.simple("a = 1"), e.getQualifier());
 
-		p1.andQualifier(ExpressionFactory.exp("b = 2"));
-		assertEquals("(a = 1) and (b = 2)", p1.getQualifier().toString());
-	}
+        e.andQualifier(CayenneExp.simple("b = 2"));
+        assertEquals(CayenneExp.simple("a = 1").and(CayenneExp.simple("b = 2")), e.getQualifier());
+    }
 }

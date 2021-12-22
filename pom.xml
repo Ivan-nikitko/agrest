@@ -4,10 +4,12 @@
 
     <groupId>io.agrest</groupId>
     <artifactId>agrest-parent</artifactId>
-    <version>3.6-SNAPSHOT</version>
+    <version>3.12-SNAPSHOT</version>
 
     <name>agrest: parent POM of all modules</name>
-    <description>Agrest is a Model-driven RESTful data services framework. This is the parent POM of all Agrest modules</description>
+    <description>Agrest is a Model-driven RESTful data services framework. This is the parent POM of all Agrest
+        modules
+    </description>
     <packaging>pom</packaging>
 
     <modules>
@@ -34,12 +36,15 @@
 
         <!-- Custom properties (mostly framework versions) -->
         <slf4j-version>1.7.25</slf4j-version>
-        <cayenne-version>4.1</cayenne-version>
+        <cayenne-version>4.1.1</cayenne-version>
         <jersey-version>2.27</jersey-version>
         <jaxrs-version>2.1</jaxrs-version>
         <jackson-version>2.10.3</jackson-version>
         <openapi-generator-version>3.0.2</openapi-generator-version>
-        <bootique-version>1.1</bootique-version>
+        <bootique-version>2.0.B1</bootique-version>
+        <junit5-version>5.7.0</junit5-version>
+
+        <gpg.pinentry.mode>loopback</gpg.pinentry.mode>
     </properties>
 
     <url>https://github.com/agrestio/agrest/</url>
@@ -78,8 +83,8 @@
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
         </repository>
         <snapshotRepository>
-            <id>agrest-snapshots</id>
-            <url>https://maven.objectstyle.org/nexus/content/repositories/linkrest-snapshots</url>
+            <id>oss-sonatype-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
 
@@ -91,7 +96,7 @@
         </repository>
         <repository>
             <id>cayenne-release</id>
-            <url>https://repository.apache.org/content/repositories/orgapachecayenne-1040/</url>
+            <url>https://repository.apache.org/content/repositories/orgapachecayenne-1048/</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -110,23 +115,24 @@
             </snapshots>
         </repository>
     </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>agrest-dependencies</id>
-            <name>AgRest Dependencies Repo</name>
-            <url>https://maven.objectstyle.org/nexus/content/groups/linkrest</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </pluginRepository>
-    </pluginRepositories>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>4.12</version>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit5-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+                <version>${junit5-version}</version>
+            </dependency>
+            <!-- Use Vintage until we switch every module to JUnit 5-->
+            <dependency>
+                <groupId>org.junit.vintage</groupId>
+                <artifactId>junit-vintage-engine</artifactId>
+                <version>${junit5-version}</version>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
@@ -222,12 +228,39 @@
                 <artifactId>commons-io</artifactId>
                 <version>1.3.2</version>
             </dependency>
+             <!--
+            Importing individual Bootique modules instead of a BOM, as BOM would be treated as a dependency
+            by the downstream projects.
+            -->
             <dependency>
-                <groupId>io.bootique.bom</groupId>
-                <artifactId>bootique-bom</artifactId>
+                <groupId>io.bootique.jdbc</groupId>
+                <artifactId>bootique-jdbc-junit5-derby</artifactId>
                 <version>${bootique-version}</version>
-                <scope>import</scope>
-                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>io.bootique.cayenne</groupId>
+                <artifactId>bootique-cayenne-junit5</artifactId>
+                <version>${bootique-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.bootique</groupId>
+                <artifactId>bootique-junit5</artifactId>
+                <version>${bootique-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.bootique.jdbc</groupId>
+                <artifactId>bootique-jdbc-junit5-derby</artifactId>
+                <version>${bootique-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.bootique.jersey</groupId>
+                <artifactId>bootique-jersey</artifactId>
+                <version>${bootique-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.bootique.jetty</groupId>
+                <artifactId>bootique-jetty-junit5</artifactId>
+                <version>${bootique-version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -238,31 +271,26 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>2.5.1</version>
+                    <version>3.8.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.6</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>1.4.1</version>
+                    <version>3.2.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.9.1</version>
+                    <version>3.2.0</version>
                     <configuration>
                         <!-- Java 8 is too strict about Javadoc omissions -->
-                        <additionalparam>-Xdoclint:none</additionalparam>
+                        <doclint>none</doclint>
                     </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-deploy-plugin</artifactId>
-                    <version>2.8.1</version>
+                    <version>3.0.0-M1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -272,23 +300,28 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>2.4</version>
+                    <version>3.2.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <!-- Older versions of release plugin do not work with Git properly -->
-                    <version>2.5.3</version>
+                    <version>3.0.0-M1</version>
+                    <configuration>
+                        <autoVersionSubmodules>true</autoVersionSubmodules>
+
+                        <!-- This is to allow test dependencies to be SNAPSHOTS-->
+                        <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.18</version>
+                    <version>3.0.0-M5</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>2.18</version>
+                    <version>3.0.0-M5</version>
                     <executions>
                         <execution>
                             <id>integration-test</id>
@@ -299,6 +332,11 @@
                         </execution>
                     </executions>
                 </plugin>
+                <plugin>
+                    <groupId>org.sonatype.plugins</groupId>
+                    <artifactId>nexus-staging-maven-plugin</artifactId>
+                    <version>1.6.8</version>
+                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
@@ -306,17 +344,18 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
             </plugin>
+            <!-- This plugin replaces maven-deploy-plugin and "deploy" goal -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>oss-sonatype-releases</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                    <skipLocalStaging>true</skipLocalStaging>
+                    <stagingProgressTimeoutMinutes>20</stagingProgressTimeoutMinutes>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -340,9 +379,32 @@
                                 <configuration>
                                     <gpgArguments>
                                         <arg>--pinentry-mode</arg>
-                                        <arg>loopback</arg>
+                                        <arg>${gpg.pinentry.mode}</arg>
                                     </gpgArguments>
                                 </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
                             </execution>
                         </executions>
                     </plugin>

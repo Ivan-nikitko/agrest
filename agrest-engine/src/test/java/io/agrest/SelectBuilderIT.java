@@ -2,9 +2,10 @@ package io.agrest;
 
 import io.agrest.annotation.AgAttribute;
 import io.agrest.annotation.AgRelationship;
-import io.agrest.it.fixture.JerseyAndPojoCase;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import io.agrest.unit.AgPojoTester;
+import io.agrest.unit.PojoTest;
+import io.bootique.junit5.BQTestTool;
+import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.UriInfo;
@@ -13,25 +14,24 @@ import java.util.List;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class SelectBuilderIT extends JerseyAndPojoCase {
+public class SelectBuilderIT extends PojoTest {
 
-    @BeforeClass
-    public static void beforeClass() {
-        startTestRuntime();
-    }
+    @BQTestTool
+    static final AgPojoTester tester = tester().build();
 
     @Test
     public void testGetIncludedObjects_Root_NoLimits() {
 
-        bucket(Tr.class).put(1, new Tr(1, "a"));
-        bucket(Tr.class).put(2, new Tr(2, "b"));
-        bucket(Tr.class).put(3, new Tr(3, "c"));
+        tester.bucket(Tr.class).put(1, new Tr(1, "a"));
+        tester.bucket(Tr.class).put(2, new Tr(2, "b"));
+        tester.bucket(Tr.class).put(3, new Tr(3, "c"));
 
-        DataResponse<Tr> response = ag().select(Tr.class).get();
+        DataResponse<Tr> response = tester.ag().select(Tr.class).get();
         String names = response.getIncludedObjects(Tr.class, "").stream().map(Tr::getName).collect(joining(","));
         assertEquals("a,b,c", names);
     }
@@ -39,9 +39,9 @@ public class SelectBuilderIT extends JerseyAndPojoCase {
     @Test
     public void testGetIncludedObjects_Root_MapBy() {
 
-        bucket(Tr.class).put(1, new Tr(1, "a"));
-        bucket(Tr.class).put(2, new Tr(2, "b"));
-        bucket(Tr.class).put(3, new Tr(3, "c"));
+        tester.bucket(Tr.class).put(1, new Tr(1, "a"));
+        tester.bucket(Tr.class).put(2, new Tr(2, "b"));
+        tester.bucket(Tr.class).put(3, new Tr(3, "c"));
 
         MultivaluedHashMap<String, String> params = new MultivaluedHashMap<>();
         params.putSingle("mapBy", "name");
@@ -49,7 +49,7 @@ public class SelectBuilderIT extends JerseyAndPojoCase {
         UriInfo mockUri = mock(UriInfo.class);
         when(mockUri.getQueryParameters()).thenReturn(params);
 
-        DataResponse<Tr> response = ag().select(Tr.class).uri(mockUri).get();
+        DataResponse<Tr> response = tester.ag().select(Tr.class).uri(mockUri).get();
         String names = response.getIncludedObjects(Tr.class, "").stream().map(Tr::getName).collect(joining(","));
         assertEquals("a,b,c", names);
     }
@@ -57,10 +57,10 @@ public class SelectBuilderIT extends JerseyAndPojoCase {
     @Test
     public void testGetIncludedObjects_Root_StartLimit() {
 
-        bucket(Tr.class).put(1, new Tr(1, "a"));
-        bucket(Tr.class).put(2, new Tr(2, "b"));
-        bucket(Tr.class).put(3, new Tr(3, "c"));
-        bucket(Tr.class).put(4, new Tr(4, "d"));
+        tester.bucket(Tr.class).put(1, new Tr(1, "a"));
+        tester.bucket(Tr.class).put(2, new Tr(2, "b"));
+        tester.bucket(Tr.class).put(3, new Tr(3, "c"));
+        tester.bucket(Tr.class).put(4, new Tr(4, "d"));
 
         MultivaluedHashMap<String, String> params = new MultivaluedHashMap<>();
         params.putSingle("sort", "id");
@@ -69,7 +69,7 @@ public class SelectBuilderIT extends JerseyAndPojoCase {
 
         UriInfo mockUri = mock(UriInfo.class);
         when(mockUri.getQueryParameters()).thenReturn(params);
-        DataResponse<Tr> response = ag().select(Tr.class).uri(mockUri).get();
+        DataResponse<Tr> response = tester.ag().select(Tr.class).uri(mockUri).get();
 
         String names = response.getIncludedObjects(Tr.class, "").stream().map(Tr::getName).collect(joining(","));
         assertEquals("b,c", names);
@@ -82,13 +82,13 @@ public class SelectBuilderIT extends JerseyAndPojoCase {
         Ts ts2 = new Ts(12, "q");
         Ts ts3 = new Ts(13, "r");
 
-        bucket(Ts.class).put(11, ts1);
-        bucket(Ts.class).put(12, ts1);
-        bucket(Ts.class).put(13, ts1);
+        tester.bucket(Ts.class).put(11, ts1);
+        tester.bucket(Ts.class).put(12, ts1);
+        tester.bucket(Ts.class).put(13, ts1);
 
-        bucket(Tr.class).put(1, new Tr(1, "a", ts1, ts2));
-        bucket(Tr.class).put(2, new Tr(2, "b", ts3));
-        bucket(Tr.class).put(3, new Tr(3, "c"));
+        tester.bucket(Tr.class).put(1, new Tr(1, "a", ts1, ts2));
+        tester.bucket(Tr.class).put(2, new Tr(2, "b", ts3));
+        tester.bucket(Tr.class).put(3, new Tr(3, "c"));
 
         MultivaluedHashMap<String, String> params = new MultivaluedHashMap<>();
         params.putSingle("include", "{\"path\":\"rtss\",\"sort\":\"id\"}");
@@ -96,7 +96,7 @@ public class SelectBuilderIT extends JerseyAndPojoCase {
         UriInfo mockUri = mock(UriInfo.class);
         when(mockUri.getQueryParameters()).thenReturn(params);
 
-        DataResponse<Tr> response = ag().select(Tr.class).uri(mockUri).get();
+        DataResponse<Tr> response = tester.ag().select(Tr.class).uri(mockUri).get();
         String names = response.getIncludedObjects(Ts.class, "rtss").stream().map(Ts::getName).collect(joining(","));
 
         assertEquals("p,q,r", names);
@@ -109,24 +109,24 @@ public class SelectBuilderIT extends JerseyAndPojoCase {
         Ts ts2 = new Ts(12, "q");
         Ts ts3 = new Ts(13, "r");
 
-        bucket(Ts.class).put(11, ts1);
-        bucket(Ts.class).put(12, ts1);
-        bucket(Ts.class).put(13, ts1);
+        tester.bucket(Ts.class).put(11, ts1);
+        tester.bucket(Ts.class).put(12, ts1);
+        tester.bucket(Ts.class).put(13, ts1);
 
-        bucket(Tr.class).put(1, new Tr(1, "a", ts1, ts2));
-        bucket(Tr.class).put(2, new Tr(2, "b", ts3));
-        bucket(Tr.class).put(3, new Tr(3, "c"));
+        tester.bucket(Tr.class).put(1, new Tr(1, "a", ts1, ts2));
+        tester.bucket(Tr.class).put(2, new Tr(2, "b", ts3));
+        tester.bucket(Tr.class).put(3, new Tr(3, "c"));
 
-        DataResponse<Tr> response = ag().select(Tr.class).get();
+        DataResponse<Tr> response = tester.ag().select(Tr.class).get();
         Collection<Ts> objects = response.getIncludedObjects(Ts.class, "rtss");
 
         assertTrue(objects.isEmpty());
     }
 
     public static class Tr {
-        private int id;
-        private String name;
-        private List<Ts> rtss;
+        private final int id;
+        private final String name;
+        private final List<Ts> rtss;
 
         public Tr(int id, String name, Ts... tss) {
             this.id = id;
@@ -151,8 +151,8 @@ public class SelectBuilderIT extends JerseyAndPojoCase {
     }
 
     public static class Ts {
-        private int id;
-        private String name;
+        private final int id;
+        private final String name;
 
         public Ts(int id, String name) {
             this.id = id;

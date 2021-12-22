@@ -4,23 +4,20 @@ import io.agrest.ResourceEntity;
 import io.agrest.RootResourceEntity;
 import io.agrest.annotation.AgAttribute;
 import io.agrest.annotation.AgId;
+import io.agrest.base.protocol.Dir;
+import io.agrest.base.protocol.Sort;
 import io.agrest.meta.compiler.AgEntityCompiler;
 import io.agrest.meta.compiler.PojoEntityCompiler;
-import io.agrest.base.protocol.Sort;
 import io.agrest.runtime.entity.SortMerger;
 import io.agrest.runtime.meta.MetadataService;
-import io.agrest.runtime.path.PathDescriptorManager;
-import org.apache.cayenne.query.Ordering;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
-import java.util.Iterator;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SortMergerTest {
 
@@ -29,14 +26,14 @@ public class SortMergerTest {
 
     private ResourceEntity<?> entity;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeAll() {
         AgEntityCompiler compiler = new PojoEntityCompiler(Collections.emptyMap());
         metadataService = new MetadataService(Collections.singletonList(compiler));
-        merger = new SortMerger(new PathDescriptorManager());
+        merger = new SortMerger();
     }
 
-    @Before
+    @BeforeEach
     public void beforeEach() {
         this.entity = new RootResourceEntity<>(metadataService.getAgEntity(Tr.class), null);
     }
@@ -47,13 +44,8 @@ public class SortMergerTest {
         merger.merge(entity, asList(new Sort("a"), new Sort("b")));
 
         assertEquals(2, entity.getOrderings().size());
-
-        Iterator<Ordering> it = entity.getOrderings().iterator();
-        Ordering o1 = it.next();
-        Ordering o2 = it.next();
-
-        Assert.assertEquals("a", o1.getSortSpecString());
-        assertEquals("b", o2.getSortSpecString());
+        assertEquals(new Sort("a", Dir.ASC), entity.getOrderings().get(0));
+        assertEquals(new Sort("b", Dir.ASC), entity.getOrderings().get(1));
     }
 
     @Test
@@ -62,11 +54,7 @@ public class SortMergerTest {
         merger.merge(entity, Collections.singletonList(new Sort("a")));
 
         assertEquals(1, entity.getOrderings().size());
-
-        Iterator<Ordering> it = entity.getOrderings().iterator();
-        Ordering o1 = it.next();
-
-        assertEquals("a", o1.getSortSpecString());
+        assertEquals(new Sort("a", Dir.ASC), entity.getOrderings().get(0));
     }
 
     public static class Tr {

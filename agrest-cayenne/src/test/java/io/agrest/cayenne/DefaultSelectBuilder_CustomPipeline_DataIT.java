@@ -3,29 +3,28 @@ package io.agrest.cayenne;
 import io.agrest.DataResponse;
 import io.agrest.SelectBuilder;
 import io.agrest.SelectStage;
-import io.agrest.cayenne.unit.JerseyAndDerbyCase;
-import io.agrest.it.fixture.cayenne.E2;
-import io.agrest.it.fixture.cayenne.E3;
+import io.agrest.base.protocol.CayenneExp;
+import io.agrest.cayenne.unit.AgCayenneTester;
+import io.agrest.cayenne.unit.DbTest;
+import io.agrest.cayenne.cayenne.main.E2;
+import io.agrest.cayenne.cayenne.main.E3;
 import io.agrest.runtime.DefaultSelectBuilder;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import io.bootique.junit5.BQTestTool;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DefaultSelectBuilder_CustomPipeline_DataIT extends JerseyAndDerbyCase {
+public class DefaultSelectBuilder_CustomPipeline_DataIT extends DbTest {
 
-    @BeforeClass
-    public static void startTestRuntime() {
-        JerseyAndDerbyCase.startTestRuntime();
-    }
+    @BQTestTool
+    static final AgCayenneTester tester = tester()
 
-    @Override
-    protected Class<?>[] testEntities() {
-        return new Class[]{E2.class, E3.class};
-    }
+            .entities(E2.class, E3.class)
+            .build();
 
     private <T> DefaultSelectBuilder<T> createBuilder(Class<T> type) {
-        SelectBuilder<T> builder = ag().select(type);
+        SelectBuilder<T> builder = tester.ag().select(type);
         assertTrue(builder instanceof DefaultSelectBuilder);
         return (DefaultSelectBuilder<T>) builder;
     }
@@ -33,12 +32,12 @@ public class DefaultSelectBuilder_CustomPipeline_DataIT extends JerseyAndDerbyCa
     @Test
     public void testStage() {
 
-        e2().insertColumns("id_", "name")
+        tester.e2().insertColumns("id_", "name")
                 .values(1, "xxx")
                 .values(2, "yyy").exec();
 
         DataResponse<E2> dr = createBuilder(E2.class)
-                .stage(SelectStage.CREATE_ENTITY, c -> c.getEntity().setQualifier(E2.NAME.eq("yyy")))
+                .stage(SelectStage.CREATE_ENTITY, c -> c.getEntity().andQualifier(CayenneExp.simple("name = 'yyy'")))
                 .get();
 
         assertEquals(1, dr.getObjects().size());
@@ -48,7 +47,7 @@ public class DefaultSelectBuilder_CustomPipeline_DataIT extends JerseyAndDerbyCa
     @Test
     public void testTerminalStage() {
 
-        e2().insertColumns("id_", "name").values(1, "xxx").exec();
+        tester.e2().insertColumns("id_", "name").values(1, "xxx").exec();
 
         DataResponse<E2> dr = createBuilder(E2.class)
                 .terminalStage(SelectStage.PARSE_REQUEST, c -> {

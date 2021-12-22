@@ -1,82 +1,85 @@
 package io.agrest.runtime.protocol;
 
 import io.agrest.base.protocol.CayenneExp;
+import io.agrest.base.protocol.exp.NamedParamsExp;
+import io.agrest.base.protocol.exp.PositionalParamsExp;
+import io.agrest.base.protocol.exp.SimpleExp;
 import io.agrest.runtime.jackson.JacksonService;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CayenneExpParserTest {
 
     private static CayenneExpParser parser;
 
-	@BeforeClass
+	@BeforeAll
 	public static void beforeAll() {
 		parser = new CayenneExpParser(new JacksonService());
 	}
 
 	@Test
 	public void testProcess_Bare() {
-        CayenneExp exp = parser.fromString("a = 12345 and b = 'John Smith' and c = true");
+        SimpleExp exp = (SimpleExp) parser.fromString("a = 12345 and b = 'John Smith' and c = true");
 		assertNotNull(exp);
-		assertEquals("a = 12345 and b = 'John Smith' and c = true", exp.getExp());
+		assertEquals("a = 12345 and b = 'John Smith' and c = true", exp.getTemplate());
 	}
 
 	@Test
 	public void testProcess_Functions() {
-        CayenneExp exp = parser.fromString("length(b) > 5");
+		SimpleExp exp = (SimpleExp) parser.fromString("length(b) > 5");
 		assertNotNull(exp);
-		assertEquals("length(b) > 5", exp.getExp());
+		assertEquals("length(b) > 5", exp.getTemplate());
 	}
 
 	@Test
 	public void testProcess_List() {
-        CayenneExp exp = parser.fromString("[\"a = 12345 and b = 'John Smith' and c = true\"]");
+		SimpleExp exp = (SimpleExp) parser.fromString("[\"a = 12345 and b = 'John Smith' and c = true\"]");
 		assertNotNull(exp);
-		assertEquals("a = 12345 and b = 'John Smith' and c = true", exp.getExp());
+		assertEquals("a = 12345 and b = 'John Smith' and c = true", exp.getTemplate());
 	}
 
 	@Test
 	public void testProcess_List_Params_String() {
-        CayenneExp exp = parser.fromString("[\"b=$s\",\"x\"]");
+		PositionalParamsExp exp = (PositionalParamsExp) parser.fromString("[\"b=$s\",\"x\"]");
 		assertNotNull(exp);
-		assertEquals("b=$s", exp.getExp());
-		assertFalse(exp.getInPositionParams().isEmpty());
-		assertEquals("\"x\"", exp.getInPositionParams().get(0).toString());
+		assertEquals("b=$s", exp.getTemplate());
+		assertEquals(1, exp.getParams().length);
+		assertEquals("\"x\"", exp.getParams()[0].toString());
 	}
 
 	@Test
 	public void testProcess_List_Params_Multiple() {
-        CayenneExp exp = parser.fromString( "[\"b=$s or b =$x or b =$s\",\"x\",\"y\"]");
+		PositionalParamsExp exp = (PositionalParamsExp) parser.fromString( "[\"b=$s or b =$x or b =$s\",\"x\",\"y\"]");
 		assertNotNull(exp);
-		assertEquals("b=$s or b =$x or b =$s", exp.getExp());
-		assertEquals(2, exp.getInPositionParams().size());
-		assertEquals("\"x\"", exp.getInPositionParams().get(0).toString());
-		assertEquals("\"y\"", exp.getInPositionParams().get(1).toString());
+		assertEquals("b=$s or b =$x or b =$s", exp.getTemplate());
+		assertEquals(2, exp.getParams().length);
+		assertEquals("\"x\"", exp.getParams()[0].toString());
+		assertEquals("\"y\"", exp.getParams()[1].toString());
 	}
 
 	@Test
 	public void testProcess_Map() {
-        CayenneExp exp = parser.fromString("{\"exp\" : \"a = 12345 and b = 'John Smith' and c = true\"}");
+		SimpleExp exp = (SimpleExp) parser.fromString("{\"exp\" : \"a = 12345 and b = 'John Smith' and c = true\"}");
 		assertNotNull(exp);
-		assertEquals("a = 12345 and b = 'John Smith' and c = true", exp.getExp());
+		assertEquals("a = 12345 and b = 'John Smith' and c = true", exp.getTemplate());
 	}
 
 	@Test
 	public void testProcess_Map_Params_String() {
-        CayenneExp exp = parser.fromString("{\"exp\" : \"b=$s\", \"params\":{\"s\":\"x\"}}");
+		NamedParamsExp exp = (NamedParamsExp) parser.fromString("{\"exp\" : \"b=$s\", \"params\":{\"s\":\"x\"}}");
 		assertNotNull(exp);
-		assertEquals("b=$s", exp.getExp());
+		assertEquals("b=$s", exp.getTemplate());
 		assertFalse(exp.getParams().isEmpty());
 		assertEquals("\"x\"", exp.getParams().get("s").toString());
 	}
 
 	@Test
 	public void testProcess_Map_Params_Null() {
-        CayenneExp exp = parser.fromString( "{\"exp\" : \"c=$b\", \"params\":{\"b\": null}}");
+		NamedParamsExp exp = (NamedParamsExp) parser.fromString( "{\"exp\" : \"c=$b\", \"params\":{\"b\": null}}");
 		assertNotNull(exp);
-		assertEquals("c=$b", exp.getExp());
+		assertEquals("c=$b", exp.getTemplate());
 		assertFalse(exp.getParams().isEmpty());
 		assertNull(exp.getParams().get("b"));
 	}

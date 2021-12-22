@@ -1,45 +1,36 @@
 package io.agrest.base.protocol;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import io.agrest.base.protocol.exp.*;
 
-import static java.util.Arrays.asList;
+import java.util.Map;
 
 /**
  * Represents 'cayenneExp' Agrest protocol parameter.
  *
- * @since 2.13
+ * @since 3.8
  */
-public class CayenneExp {
+public interface CayenneExp {
 
-    private String exp;
-    private Map<String, Object> params;
-    private List<Object> inPositionParams;
 
-    public CayenneExp(String exp) {
-        this.exp = exp;
+    static CayenneExp simple(String template) {
+        return new SimpleExp(template);
     }
 
-    public CayenneExp(String exp, Object... params) {
-        this.exp = exp;
-        this.inPositionParams = asList(params);
+    static CayenneExp withPositionalParams(String template, Object... params) {
+        return params.length == 0 ? simple(template) : new PositionalParamsExp(template, params);
     }
 
-    public CayenneExp(String exp, Map<String, Object> params) {
-        this.exp = exp;
-        this.params = params;
+    static CayenneExp withNamedParams(String template, Map<String, Object> params) {
+        return params.isEmpty() ? simple(template) : new NamedParamsExp(template, params);
     }
 
-    public String getExp() {
-        return exp;
+    void visit(ExpVisitor visitor);
+
+    default CayenneExp and(CayenneExp exp) {
+        return exp != null ? new CompositeExp(CompositeExp.AND, this, exp) : this;
     }
 
-    public Map<String, Object> getParams() {
-        return params != null ? params : Collections.emptyMap();
-    }
-
-    public List<Object> getInPositionParams() {
-        return inPositionParams != null ? inPositionParams : Collections.emptyList();
+    default CayenneExp or(CayenneExp exp) {
+        return exp != null ? new CompositeExp(CompositeExp.OR, this, exp) : this;
     }
 }

@@ -1,6 +1,36 @@
+## Release 3.11
+
+* #494 java.lang.Double cannot be cast to java.math.BigDecimal
+
+## Release 3.10
+
+* #487 Bootique dependency leaks to Agrest via BOM import 
+
+## Release 3.9
+
+* #478 Cayenne compound ID mapped to object properties with different names fails to serialize
+
+## Release 3.8
+
+* #468 ClassCastException in combination Agrest 3.4 and Cayenne 4.1
+* #477 Composable Exp 3.x
+
+## Release 3.7
+
+* #449 Excludes in overlays: support removing attributes and relationships via overlays
+* #450 Minimize Cayenne footprint - remove references to "Property" from API signatures
+* #451 Remove API deprecated in 3.4 or earlier
+* #452 Replace SelectBuilder.property(..) with overlay-based API
+* #453 Remove Cayenne SelectQuery from ResourceEntity
+* #454 Remove property name from property reader signature
+* #455 Replace Cayenne Ordering in ResourceEntity with Agrest "sort"
+* #457 Replace Cayenne "Expression" in ResourceEntity with Agrest "CayenneExp"
+
 ## Release 3.6
 
 * #444 Support id propagation on update from PK properties
+* #446 Separate "commit" in its own UpdateStage to intercept uncommitted data
+* #447 "CayenneResolvers.nested(..).viaQueryWithParentIds()" strategy must respect pagination settings
 
 ## Release 3.5
 

@@ -1,7 +1,7 @@
 package io.agrest.swagger.api.v1.service;
 
-import io.agrest.it.fixture.cayenne.E2;
-import io.agrest.it.fixture.cayenne.E3;
+import io.agrest.cayenne.cayenne.main.E2;
+import io.agrest.cayenne.cayenne.main.E3;
 
 import io.agrest.AgRequest;
 import io.agrest.DataResponse;
@@ -139,7 +139,7 @@ public class E3Resource {
 
         return Ag.idempotentCreateOrUpdate(E2.class, config)
                  .id(tid)
-                 .parent(E3.class, id, E3.E2)
+                 .parent(E3.class, id, "e2")
                  .request(agRequest)
                  .syncAndSelect(e2);
     }

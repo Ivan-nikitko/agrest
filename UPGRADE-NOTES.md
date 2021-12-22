@@ -1,3 +1,40 @@
+## Upgrading to 3.8
+
+### 'CayenneExp' constructors replaced with static factory methods  [#477](https://github.com/agrestio/agrest/issues/477)
+
+`CayenneExp` class was converted to an interface to allow to compose expression trees from parts. As a result all its
+constructors got replaced with convenience static methods - `CayenneExp.simple()`, `CayenneExp.withPositionalParams()`,
+`CayenneExp.withNamedParams()`. If you see compilation errors, replace constructor calls accordingly.
+
+## Upgrading to 3.7
+
+### "SelectBuilder.property()" replaced with simpler "SelectBuilder.entityAttribute()" [#452](https://github.com/agrestio/agrest/issues/452) 
+
+As a part of the effort to consolidate various customization APIs, two "SelectBuilder.property()" methods were replaced
+with a single "SelectBuilder.entityAttribute()" method that relies on the standard entity overlay customization 
+mechanism behind the scenes. It is more user-friendly, as it allows a user to provide `Function<T, V> reader` 
+instead of an obscure `EntityProperty property`.
+
+### "ResourceEntity.getSelect()" is not available [#453](https://github.com/agrestio/agrest/issues/453) 
+
+`ResourceEntity.getSelect()` is removed, so that there's no direct Cayenne dependency in generic Agrest API. 
+While there's still a way to access it using `CayenneProcessor` class, you will no longer be able to set an arbitrary
+query as a "template" for Cayenne. So if you need to customize query parameters, such as expressions, orderings, includes,
+look into using ResourceEntity API instead.
+
+### Cayenne Expression is no longer part of ResourceEntity [#457](https://github.com/agrestio/agrest/issues/457) 
+
+In a continuing effort to remove dependency on Cayenne, ResourceEntity tree is no longer using Expression "qualifier". Instead ir is replaced with a collection of Agrest `CayenneExp` objects. This may effect customization code if it attempted to change query conditions. Our recommendation is to replace Cayenne Expression class in any such code with CayenneExp. 
+
+A special case is Sencha module. Callers of `SenchaOps.startsWithFilter(..)` must attach it to `SelectStage.APPLY_SERVER_PARAMS` stage, not `SelectStage.ASSEMBLE_QUERY`, or it will not be applied.
+
+## Upgrading to 3.6
+
+### Separate "commit" in its own UpdateStage [#446](https://github.com/agrestio/agrest/issues/446) 
+
+If you customized `UpdateStage.UPDATE_DATA_STORE` stage on update, change the stage name from `UPDATE_DATA_STORE` 
+to `COMMIT`. It should produce the same result. 
+
 ## Upgrading to 3.5
 
 ### Isolating a pluggable Cayenne backend [#433](https://github.com/agrestio/agrest/issues/433) 

@@ -2,32 +2,26 @@ package io.agrest.base.jsonvalueconverter;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DefaultJsonValueConverterFactory_PojoTest {
 
     IJsonValueConverterFactory converterFactory;
     JsonNodeFactory nodeFactory;
 
-    @Before
+    @BeforeEach
     public void before() {
         converterFactory = new DefaultJsonValueConverterFactoryProvider(Collections.emptyMap()).get();
         nodeFactory = JsonNodeFactory.instance;
     }
 
     private <T> JsonValueConverter<T> compile(Class<T> type) {
-        return converterFactory.typedConverter(type)
-                .orElseThrow(() -> new RuntimeException("Can't create converter for type: " + type.getName()));
+        return converterFactory.typedConverter(type);
     }
 
     private JsonNodeFactory nodeFactory() {
@@ -100,11 +94,11 @@ public class DefaultJsonValueConverterFactory_PojoTest {
         assertEquals(t3_expected, t3);
     }
 
-    private <T extends Collection> void assertSameContent(T collection, Object... values) {
+    private <T extends Collection<?>> void assertSameContent(T collection, Object... values) {
         assertNotNull(collection);
         assertEquals(values.length, collection.size());
         for (Object value : values) {
-            assertTrue("Value is missing from the collection: '" + value + "'", collection.contains(value));
+            assertTrue(collection.contains(value), "Value is missing from the collection: '" + value + "'");
         }
     }
 
@@ -226,7 +220,7 @@ public class DefaultJsonValueConverterFactory_PojoTest {
 
             if (!id.equals(t3.id)) return false;
             if (t4s != null ? !t4s.containsAll(t3.t4s) : t3.t4s != null) return false;
-            return t5 != null ? t5.equals(t3.t5) : t3.t5 == null;
+            return Objects.equals(t5, t3.t5);
 
         }
 
@@ -278,7 +272,7 @@ public class DefaultJsonValueConverterFactory_PojoTest {
             T4 t4 = (T4) object;
 
             if (!id.equals(t4.id)) return false;
-            return t3 != null ? t3.equals(t4.t3) : t4.t3 == null;
+            return Objects.equals(t3, t4.t3);
 
         }
 

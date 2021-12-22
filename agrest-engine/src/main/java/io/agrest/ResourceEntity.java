@@ -1,20 +1,13 @@
 package io.agrest;
 
+import io.agrest.base.protocol.CayenneExp;
+import io.agrest.base.protocol.Sort;
 import io.agrest.encoder.EntityEncoderFilter;
 import io.agrest.meta.AgAttribute;
 import io.agrest.meta.AgEntity;
 import io.agrest.meta.AgEntityOverlay;
-import org.apache.cayenne.exp.Expression;
-import org.apache.cayenne.query.Ordering;
-import org.apache.cayenne.query.SelectQuery;
-import org.apache.cayenne.util.ToStringBuilder;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A metadata object that describes a data structure of a given REST resource. Connected ResourceEntities form a
@@ -28,25 +21,22 @@ public abstract class ResourceEntity<T> {
 
     private boolean idIncluded;
 
-    private AgEntity<T> agEntity;
-    private AgEntityOverlay<T> agEntityOverlay;
-    private Map<String, AgAttribute> attributes;
-    private Collection<String> defaultProperties;
+    private final AgEntity<T> agEntity;
+    private final AgEntityOverlay<T> agEntityOverlay;
+
+    private final Map<String, AgAttribute> attributes;
+    private final Set<String> defaultAttributes;
+    private final Map<String, NestedResourceEntity<?>> children;
 
     private String mapByPath;
     private ResourceEntity<?> mapBy;
-    private Map<String, NestedResourceEntity<?>> children;
-    private List<Ordering> orderings;
-    private Expression qualifier;
-    private Map<String, EntityProperty> includedExtraProperties;
-    private Map<String, EntityProperty> extraProperties;
+    private final List<Sort> orderings;
+    private CayenneExp qualifier;
     private int fetchOffset;
     private int fetchLimit;
-    private List<EntityEncoderFilter> entityEncoderFilters;
+    private final List<EntityEncoderFilter> entityEncoderFilters;
 
-    // TODO: Per #433 get rid of SelectQuery in generic "agrest-engine".. It must live on the "agrest-cayenne" side.
-    @Deprecated
-    private SelectQuery<T> select;
+    private final Map<String, Object> requestProperties;
 
     public ResourceEntity(AgEntity<T> agEntity, AgEntityOverlay<T> agEntityOverlay) {
 
@@ -55,12 +45,12 @@ public abstract class ResourceEntity<T> {
 
         this.idIncluded = false;
         this.attributes = new HashMap<>();
-        this.defaultProperties = new HashSet<>();
+        this.defaultAttributes = new HashSet<>();
         this.children = new HashMap<>();
         this.orderings = new ArrayList<>(2);
-        this.extraProperties = new HashMap<>();
-        this.includedExtraProperties = new HashMap<>();
         this.entityEncoderFilters = new ArrayList<>(3);
+
+        this.requestProperties = new HashMap<>(5);
     }
 
     /**
@@ -84,40 +74,23 @@ public abstract class ResourceEntity<T> {
         return agEntityOverlay;
     }
 
-    public Expression getQualifier() {
+    /**
+     * @since 3.8
+     */
+    public CayenneExp getQualifier() {
         return qualifier;
     }
 
     /**
-     * Resets the qualifier for the entity to a new one.
-     *
-     * @param qualifier a new qualifier expression. Can be null.
-     * @since 2.7
+     * @since 3.8
      */
-    public void setQualifier(Expression qualifier) {
-        this.qualifier = qualifier;
+    public void andQualifier(CayenneExp qualifier) {
+        this.qualifier = this.qualifier != null ? this.qualifier.and(qualifier) : qualifier;
     }
 
-    public void andQualifier(Expression qualifier) {
-        if (this.qualifier == null) {
-            this.qualifier = qualifier;
-        } else {
-            this.qualifier = this.qualifier.andExp(qualifier);
-        }
-    }
-
-    public List<Ordering> getOrderings() {
+    public List<Sort> getOrderings() {
         return orderings;
     }
-
-    public SelectQuery<T> getSelect() {
-        return select;
-    }
-
-    public void setSelect(SelectQuery<T> select) {
-        this.select = select;
-    }
-
 
     /**
      * @since 1.12
@@ -127,17 +100,43 @@ public abstract class ResourceEntity<T> {
     }
 
     /**
-     * @since 1.5
+     * Returns whether the named attribute was added to the entity implicitly, via the default rules, instead of being
+     * explicitly requested by the client.
+     *
+     * @since 3.7
      */
-    public Collection<String> getDefaultProperties() {
-        return defaultProperties;
+    public boolean isDefaultAttribute(String name) {
+        return defaultAttributes.contains(name);
     }
 
     /**
-     * @since 1.5
+     * @since 3.7
      */
-    public boolean isDefault(String propertyName) {
-        return defaultProperties.contains(propertyName);
+    public void addAttribute(AgAttribute attribute, boolean isDefault) {
+        attributes.put(attribute.getName(), attribute);
+        if (isDefault) {
+            defaultAttributes.add(attribute.getName());
+        }
+    }
+
+    /**
+     * @since 3.7
+     */
+    public AgAttribute removeAttribute(String name) {
+
+        AgAttribute removed = attributes.remove(name);
+        if (removed != null) {
+            defaultAttributes.remove(name);
+        }
+
+        return removed;
+    }
+
+    /**
+     * @since 3.7
+     */
+    public NestedResourceEntity<?> removeChild(String name) {
+        return children.remove(name);
     }
 
     public Map<String, NestedResourceEntity<?>> getChildren() {
@@ -149,14 +148,6 @@ public abstract class ResourceEntity<T> {
      */
     public NestedResourceEntity<?> getChild(String name) {
         return children.get(name);
-    }
-
-    public Map<String, EntityProperty> getExtraProperties() {
-        return extraProperties;
-    }
-
-    public Map<String, EntityProperty> getIncludedExtraProperties() {
-        return includedExtraProperties;
     }
 
     public boolean isIdIncluded() {
@@ -197,13 +188,9 @@ public abstract class ResourceEntity<T> {
 
     @Override
     public String toString() {
-
-        ToStringBuilder tsb = new ToStringBuilder(this);
-        if (agEntity != null) {
-            tsb.append("name", agEntity.getName());
-        }
-
-        return tsb.toString();
+        return "ResourceEntity{" +
+                "name=" + agEntity.getName() +
+                '}';
     }
 
     public Class<T> getType() {
@@ -250,5 +237,25 @@ public abstract class ResourceEntity<T> {
      */
     public List<EntityEncoderFilter> getEntityEncoderFilters() {
         return entityEncoderFilters;
+    }
+
+    /**
+     * Returns a previously stored object for a given name. Request properties mechanism allows pluggable processing
+     * pipelines to store and exchange data within a given request.
+     *
+     * @since 3.7
+     */
+    public <P> P getRequestProperty(String name) {
+        return (P) requestProperties.get(name);
+    }
+
+    /**
+     * Sets a property value for a given name. Request properties mechanism allows pluggable processing pipelines to
+     * store and exchange data within a given request.
+     *
+     * @since 3.7
+     */
+    public void setRequestProperty(String name, Object value) {
+        requestProperties.put(name, value);
     }
 }

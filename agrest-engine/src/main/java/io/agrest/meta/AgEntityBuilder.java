@@ -5,20 +5,17 @@ import io.agrest.annotation.AgId;
 import io.agrest.annotation.AgRelationship;
 import io.agrest.base.reflect.BeanAnalyzer;
 import io.agrest.base.reflect.PropertyGetter;
-import io.agrest.property.BeanPropertyReader;
-import io.agrest.property.DefaultIdReader;
-import io.agrest.resolver.NestedDataResolver;
+import io.agrest.property.IdReader;
+import io.agrest.property.PropertyIdReader;
+import io.agrest.property.PropertyReader;
+import io.agrest.resolver.ReaderBasedResolver;
 import io.agrest.resolver.RootDataResolver;
 import io.agrest.resolver.ThrowingRootDataResolver;
 import org.apache.cayenne.exp.parser.ASTObjPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
+import java.lang.reflect.*;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,16 +29,15 @@ public class AgEntityBuilder<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AgEntityBuilder.class);
 
-    private Class<T> type;
-    private String name;
-    private AgDataMap agDataMap;
+    private final Class<T> type;
+    private final String name;
+    private final AgDataMap agDataMap;
     private AgEntityOverlay<T> overlay;
     private RootDataResolver<T> rootDataResolver;
-    private NestedDataResolver<T> nestedDataResolver;
 
-    private Map<String, io.agrest.meta.AgAttribute> ids;
-    private Map<String, io.agrest.meta.AgAttribute> attributes;
-    private Map<String, io.agrest.meta.AgRelationship> relationships;
+    private final Map<String, io.agrest.meta.AgAttribute> ids;
+    private final Map<String, io.agrest.meta.AgAttribute> attributes;
+    private final Map<String, io.agrest.meta.AgRelationship> relationships;
 
     public AgEntityBuilder(Class<T> type, AgDataMap agDataMap) {
         this.type = type;
@@ -66,14 +62,6 @@ public class AgEntityBuilder<T> {
         return this;
     }
 
-    /**
-     * @since 3.4
-     */
-    public AgEntityBuilder<T> nestedDataResolver(NestedDataResolver<T> resolver) {
-        this.nestedDataResolver = resolver;
-        return this;
-    }
-
     public DefaultAgEntity<T> build() {
 
         collectProperties();
@@ -85,7 +73,7 @@ public class AgEntityBuilder<T> {
                 ids,
                 attributes,
                 relationships,
-                new DefaultIdReader(ids.keySet()),
+                createIdReader(),
                 rootDataResolver != null ? rootDataResolver : ThrowingRootDataResolver.getInstance());
     }
 
@@ -102,7 +90,7 @@ public class AgEntityBuilder<T> {
     }
 
     private void collectProperties() {
-        BeanAnalyzer.findGetters(type).forEach(getter -> appendProperty(getter));
+        BeanAnalyzer.findGetters(type).forEach(this::appendProperty);
     }
 
     private void appendProperty(PropertyGetter getter) {
@@ -121,7 +109,7 @@ public class AgEntityBuilder<T> {
         if (m.getAnnotation(AgAttribute.class) != null) {
 
             if (checkValidAttributeType(type, m.getGenericReturnType())) {
-                addAttribute(new DefaultAgAttribute(name, type, new ASTObjPath(name), BeanPropertyReader.reader()));
+                addAttribute(new DefaultAgAttribute(name, type, new ASTObjPath(name), getter::getValue));
             } else {
                 // still return true after validation failure... this is an attribute, just not a proper one
                 LOGGER.warn("Invalid attribute type for " + this.name + "." + name + ". Skipping.");
@@ -133,7 +121,7 @@ public class AgEntityBuilder<T> {
         if (m.getAnnotation(AgId.class) != null) {
 
             if (checkValidIdType(type)) {
-                addId(new DefaultAgAttribute(name, type, new ASTObjPath(name), BeanPropertyReader.reader()));
+                addId(new DefaultAgAttribute(name, type, new ASTObjPath(name), getter::getValue));
             } else {
                 // still return true after validation failure... this is an
                 // attribute, just not a proper one
@@ -147,13 +135,10 @@ public class AgEntityBuilder<T> {
     }
 
     private boolean checkValidAttributeType(Class<?> type, Type genericType) {
-        if (Void.class.equals(type) || void.class.equals(type) || Map.class.isAssignableFrom(type)) {
-            return false;
-        }
-        if (Collection.class.isAssignableFrom(type) && !isCollectionOfSimpleType(type, genericType)) {
-            return false;
-        }
-        return true;
+        return !Void.class.equals(type)
+                && !void.class.equals(type)
+                && !Map.class.isAssignableFrom(type)
+                && (!Collection.class.isAssignableFrom(type) || isCollectionOfSimpleType(type, genericType));
     }
 
     private boolean isCollectionOfSimpleType(Class<?> type, Type genericType) {
@@ -209,14 +194,11 @@ public class AgEntityBuilder<T> {
                 toMany = true;
             }
 
-            String name = getter.getName();
-            AgEntity<?> targetEntity = agDataMap.getEntity(targetType);
-
             addRelationship(new DefaultAgRelationship(
-                    name,
-                    targetEntity,
+                    getter.getName(),
+                    agDataMap.getEntity(targetType),
                     toMany,
-                    nestedDataResolver)
+                    new ReaderBasedResolver<>(getter::getValue))
             );
         }
 
@@ -227,8 +209,9 @@ public class AgEntityBuilder<T> {
         if (overlay != null) {
             overlay.getAttributes().forEach(this::addAttribute);
             overlay.getRelationshipOverlays().forEach(this::loadRelationshipOverlay);
+            overlay.getExcludes().forEach(this::removeIdOrAttributeOrRelationship);
 
-            if(overlay.getRootDataResolver() != null) {
+            if (overlay.getRootDataResolver() != null) {
                 this.rootDataResolver = overlay.getRootDataResolver();
             }
         }
@@ -239,5 +222,17 @@ public class AgEntityBuilder<T> {
         if (relationship != null) {
             addRelationship(relationship);
         }
+    }
+
+    protected void removeIdOrAttributeOrRelationship(String name) {
+        ids.remove(name);
+        attributes.remove(name);
+        relationships.remove(name);
+    }
+
+    protected IdReader createIdReader() {
+        Map<String, PropertyReader> idPropReaders = new HashMap<>();
+        ids.forEach((n, a) -> idPropReaders.put(n, a.getPropertyReader()));
+        return new PropertyIdReader(idPropReaders);
     }
 }
