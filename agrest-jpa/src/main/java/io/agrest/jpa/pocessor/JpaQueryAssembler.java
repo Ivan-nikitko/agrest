@@ -56,7 +56,7 @@ public class JpaQueryAssembler implements IJpaQueryAssembler {
         JpaQueryBuilder parentSelect = JpaProcessor.getEntity(entity.getParent()).getSelect();
 
         JpaQueryBuilder select;
-        if(entity.getIncoming().isToMany()) {
+        if (entity.getIncoming().isToMany()) {
             select = JpaQueryBuilder.select("r").selectSpec("e.id")
                     .from(entity.getParent().getName() + " e")
                     .from(", IN (e." + relationship + ") r");
@@ -64,7 +64,7 @@ public class JpaQueryAssembler implements IJpaQueryAssembler {
             select = JpaQueryBuilder.select("e." + relationship).selectSpec("e.id")
                     .from(entity.getParent().getName() + " e");
         }
-        if(parentSelect.hasWhere()) {
+        if (parentSelect.hasWhere()) {
             // TODO: translate to a new root
             select.where(parentSelect.getWhere());
         }
@@ -91,14 +91,14 @@ public class JpaQueryAssembler implements IJpaQueryAssembler {
     JpaExpression createIdQualifier(AgEntity<?> entity, Map<String, Object> idMap, String alias) {
         StringBuilder sb = new StringBuilder();
         int i = 0;
-        for(String key : idMap.keySet()) {
-            if(sb.length() > 0) {
+        for (String key : idMap.keySet()) {
+            if (sb.length() > 0) {
                 sb.append(" and ");
             }
             sb.append(alias).append('.').append(key).append(" = ?").append(i++);
         }
         JpaExpression expression = new JpaExpression(sb.toString());
-        for(Object value: idMap.values()) {
+        for (Object value : idMap.values()) {
             expression.addParameter(value);
         }
         return expression;
@@ -113,22 +113,24 @@ public class JpaQueryAssembler implements IJpaQueryAssembler {
         JpaQueryBuilder query = JpaQueryBuilder.select("e").from(entity.getName() + " e");
 
         if (!entity.isFiltered()) {
+            int start = entity.getStart();
+            if (start > 0) {
+                query.offset(start);
+            }
             int limit = entity.getLimit();
             if (limit > 0) {
                 query.limit(limit);
             }
         }
-
         for (Sort o : entity.getOrderings()) {
             query.orderBy(toOrdering(entity, o));
         }
-
         return query;
     }
 
     private <T> String toOrdering(ResourceEntity<T> entity, Sort o) {
-        if(!entity.getAttributes().containsKey(o.getProperty())) {
-            if(entity.getAgEntity().getIdPart(o.getProperty()) == null) {
+        if (!entity.getAttributes().containsKey(o.getProperty())) {
+            if (entity.getAgEntity().getIdPart(o.getProperty()) == null) {
                 throw AgException.badRequest("Invalid path '%s' for '%s'", o.getProperty(), entity.getName());
             }
         }
