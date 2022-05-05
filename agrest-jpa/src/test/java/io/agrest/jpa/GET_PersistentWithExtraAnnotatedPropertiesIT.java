@@ -1,11 +1,14 @@
 package io.agrest.jpa;
 
 import io.agrest.DataResponse;
+import io.agrest.SelectStage;
 import io.agrest.jaxrs2.AgJaxrs;
+import io.agrest.jaxrs2.pojo.model.P7;
 import io.agrest.jpa.model.E14;
 import io.agrest.jpa.model.E15;
 import io.agrest.jpa.unit.AgJpaTester;
 import io.agrest.jpa.unit.DbTest;
+import io.agrest.runtime.processor.select.SelectContext;
 import io.bootique.junit5.BQTestTool;
 import org.junit.jupiter.api.Test;
 
@@ -73,22 +76,21 @@ public class GET_PersistentWithExtraAnnotatedPropertiesIT extends DbTest {
             return AgJaxrs.select(E15.class, config).clientParams(uriInfo.getQueryParameters()).get();
         }
 
-        //TODO @Path("e14")
-//        @GET
-//        @Path("e14")
-//        public DataResponse<E14> getE14(@Context UriInfo uriInfo) {
-//            return AgJaxrs.select(E14.class, config)
-//                    .stage(SelectStage.FETCH_DATA, (SelectContext<E14> c) -> afterE14Fetched(c))
-//                    .clientParams(uriInfo.getQueryParameters()).get();
-//        }
-//
-//        void afterE14Fetched(SelectContext<E14> context) {
-//            for (E14 e14 : context.getEntity().getData()) {
-//                P7 p7 = new P7();
-//                p7.setId(Cayenne.intPKForObject(e14) * 100);
-//                p7.setString("p7_" + e14.getName());
-//                e14.setP7(p7);
-//            }
-//        }
+        @GET
+        @Path("e14")
+        public DataResponse<E14> getE14(@Context UriInfo uriInfo) {
+            return AgJaxrs.select(E14.class, config)
+                    .stage(SelectStage.FETCH_DATA, (SelectContext<E14> c) -> afterE14Fetched(c))
+                    .clientParams(uriInfo.getQueryParameters()).get();
+        }
+
+        void afterE14Fetched(SelectContext<E14> context) {
+            for (E14 e14 : context.getEntity().getData()) {
+                P7 p7 = new P7();
+                p7.setId((int) (e14.getLong_id() * 100));
+                p7.setString("p7_" + e14.getName());
+                e14.setP7(p7);
+            }
+        }
     }
 }

@@ -81,14 +81,13 @@ public class GET_Request_EntityAttributeIT extends DbTest {
         @Context
         private Configuration config;
 
-        //TODO @Path("e4/calc_property")
-//        @GET
-//        @Path("e4/calc_property")
-//        public DataResponse<E4> property_WithReader(@Context UriInfo uriInfo) {
-//            return AgJaxrs.select(E4.class, config).clientParams(uriInfo.getQueryParameters())
-//                    .entityAttribute("x", String.class, o -> "y_" + Cayenne.intPKForObject(o))
-//                    .get();
-//        }
+        @GET
+        @Path("e4/calc_property")
+        public DataResponse<E4> property_WithReader(@Context UriInfo uriInfo) {
+            return AgJaxrs.select(E4.class, config).clientParams(uriInfo.getQueryParameters())
+                    .entityAttribute("x", String.class, o -> "y_" + o.getId())
+                    .get();
+        }
 
         @GET
         @Path("e3/custom_encoding")
