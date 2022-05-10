@@ -3,7 +3,7 @@ package io.agrest.jpa.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table
+@Table (name = "e14")
 public  class E14 {
 
     @Id

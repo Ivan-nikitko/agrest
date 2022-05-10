@@ -150,17 +150,24 @@ public class JpaMapUpdateStage extends JpaMapChangesStage {
         // 2. fetch root + nested + join children with parents down to top
 
         EntityManager entityManager = JpaUpdateStartStage.entityManager(context);
-        @SuppressWarnings("unchecked")
-        List<T> objects = rootQuery.build(entityManager).getResultList();
+        try {
+            @SuppressWarnings("unchecked")
+            List<T> objects = rootQuery.build(entityManager).getResultList();
 
-        if (context.isById() && objects.size() > 1) {
-            throw AgException.internalServerError(
-                    "Found more than one object for ID '%s' and entity '%s'",
-                    context.getId(),
-                    context.getEntity().getName());
+            if (context.isById() && objects.size() > 1) {
+                throw AgException.internalServerError(
+                        "Found more than one object for ID '%s' and entity '%s'",
+                        context.getId(),
+                        context.getEntity().getName());
+            }
+
+            return objects;
+        }catch (Throwable ex){
+            if (entityManager != null) {
+                entityManager.close();
+            }
+            throw ex;
         }
-
-        return objects;
     }
 
     protected JpaExpression qualifierForKeys(Collection<Object> keys, ObjectMapper<?> mapper) {

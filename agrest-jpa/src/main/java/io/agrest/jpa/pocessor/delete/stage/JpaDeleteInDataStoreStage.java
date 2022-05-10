@@ -21,19 +21,20 @@ public class JpaDeleteInDataStoreStage extends DeleteInDataStoreStage {
     }
 
     protected void doExecute(DeleteContext<?> context) {
-
         List<Object> objects = new ArrayList<>(context.getDeleteOperations().size());
         for (ChangeOperation<?> op : context.getDeleteOperations()) {
             objects.add(op.getObject());
         }
-
         EntityManager entityManager = JpaDeleteStartStage.entityManager(context);
-
         try {
             entityManager.getTransaction().begin();
             objects.forEach(entityManager::remove);
-        } finally {
             entityManager.getTransaction().commit();
+        } catch (Throwable ex){
+            if (entityManager != null) {
+                entityManager.close();
+            }
+            throw ex;
         }
     }
 }

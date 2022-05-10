@@ -15,7 +15,14 @@ public class JpaUpdateCommitStage extends UpdateCommitStage {
     @Override
     public ProcessorOutcome execute(UpdateContext<?> context) {
         EntityManager entityManager = JpaUpdateStartStage.entityManager(context);
-        entityManager.getTransaction().commit();
-        return ProcessorOutcome.CONTINUE;
+        try {
+            entityManager.getTransaction().commit();
+            return ProcessorOutcome.CONTINUE;
+        } catch (Throwable ex) {
+            if (entityManager != null) {
+                entityManager.close();
+            }
+            throw ex;
+        }
     }
 }

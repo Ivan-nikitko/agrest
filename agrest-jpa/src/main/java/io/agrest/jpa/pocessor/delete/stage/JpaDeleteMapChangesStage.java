@@ -41,7 +41,7 @@ public class JpaDeleteMapChangesStage extends DeleteMapChangesStage {
 
     @Override
     public ProcessorOutcome execute(DeleteContext<?> context) {
-        mapDeleteOperations((DeleteContext<Object>)context);
+        mapDeleteOperations((DeleteContext<Object>) context);
         return context.getDeleteOperations().isEmpty()
                 ? ProcessorOutcome.STOP
                 : ProcessorOutcome.CONTINUE;
@@ -74,18 +74,24 @@ public class JpaDeleteMapChangesStage extends DeleteMapChangesStage {
 
         List<Object> objects = new ArrayList<>(context.getIds().size());
         EntityManager entityManager = JpaDeleteStartStage.entityManager(context);
-        for (AgObjectId id : context.getIds()) {
-            // TODO: batch objects retrieval into a single query
-            JpaQueryBuilder byIdQuery = queryAssembler.createByIdQuery(context.getAgEntity(), id);
-            List<Object> result = byIdQuery.build(entityManager).getResultList();
-            if (result.size() == 0) {
-                // TODO: get proper entity name here?
-                throw AgException.notFound("No object for ID '%s' and entity '%s'", id, context.getType().getSimpleName());
+        try {
+            for (AgObjectId id : context.getIds()) {
+                // TODO: batch objects retrieval into a single query
+                JpaQueryBuilder byIdQuery = queryAssembler.createByIdQuery(context.getAgEntity(), id);
+                List<Object> result = byIdQuery.build(entityManager).getResultList();
+                if (result.size() == 0) {
+                    // TODO: get proper entity name here?
+                    throw AgException.notFound("No object for ID '%s' and entity '%s'", id, context.getType().getSimpleName());
+                }
+                objects.add(result.get(0));
             }
-            objects.add(result.get(0));
+            return objects;
+        } catch (Throwable ex){
+            if (entityManager != null) {
+                entityManager.close();
+            }
+            throw ex;
         }
-
-        return objects;
     }
 
     @SuppressWarnings("unchecked")
@@ -93,24 +99,39 @@ public class JpaDeleteMapChangesStage extends DeleteMapChangesStage {
 
         EntityParent<?> parent = context.getParent();
         EntityManager entityManager = JpaDeleteStartStage.entityManager(context);
+        try {
 
-        Map<String, Object> parentIdMap = parent.getId().asMap(context.getAgEntity());
 
-        String relationship = parent.getRelationship();
-        // TODO: compound id
-        return JpaQueryBuilder.select("p." + relationship)
-                .from(agParentEntity.getName() + " p")
-                .where("p." + parentIdMap.keySet().iterator().next() + " = " + parentIdMap.values().iterator().next())
-                .build(entityManager)
-                .getResultList();
+            Map<String, Object> parentIdMap = parent.getId().asMap(context.getAgEntity());
+
+            String relationship = parent.getRelationship();
+            // TODO: compound id
+            return JpaQueryBuilder.select("p." + relationship)
+                    .from(agParentEntity.getName() + " p")
+                    .where("p." + parentIdMap.keySet().iterator().next() + " = " + parentIdMap.values().iterator().next())
+                    .build(entityManager)
+                    .getResultList();
+        } catch (Throwable ex){
+            if (entityManager != null) {
+                entityManager.close();
+            }
+            throw ex;
+        }
     }
 
     @SuppressWarnings("unchecked")
     protected List<Object> findAll(DeleteContext<Object> context) {
         EntityManager entityManager = JpaDeleteStartStage.entityManager(context);
-        return JpaQueryBuilder.select("e")
-                .from(context.getAgEntity().getName() + " e")
-                .build(entityManager)
-                .getResultList();
+        try {
+            return JpaQueryBuilder.select("e")
+                    .from(context.getAgEntity().getName() + " e")
+                    .build(entityManager)
+                    .getResultList();
+        } catch (Throwable ex){
+            if (entityManager != null) {
+                entityManager.close();
+            }
+            throw ex;
+        }
     }
 }

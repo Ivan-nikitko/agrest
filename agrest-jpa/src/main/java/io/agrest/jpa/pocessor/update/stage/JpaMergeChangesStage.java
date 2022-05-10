@@ -89,7 +89,13 @@ public class JpaMergeChangesStage extends UpdateMergeChangesStage {
 
     protected void delete(UpdateContext<Object> context, Object o) {
         EntityManager entityManager = JpaUpdateStartStage.entityManager(context);
-        entityManager.remove(o);
+        try {
+            entityManager.remove(o);
+        } catch (Throwable ex) {
+            if (entityManager != null) {
+                entityManager.close();
+            }
+        }
     }
 
     protected void create(UpdateContext<Object> context, ObjectRelator relator, EntityUpdate<Object> update) {
@@ -97,38 +103,51 @@ public class JpaMergeChangesStage extends UpdateMergeChangesStage {
         EntityManager entityManager = JpaUpdateStartStage.entityManager(context);
         Object o;
         try {
-            o = context.getType().getConstructor().newInstance();
-        } catch (Exception e) {
-            throw AgException.badRequest(e, "Unable to instantiate object of type: %s", context.getType().getName());
-        }
-
-        Map<String, Object> idByAgAttribute = update.getId();
-
-        // set explicit ID
-        if (idByAgAttribute != null) {
-            if (context.isIdUpdatesDisallowed() && update.isExplicitId()) {
-                throw AgException.badRequest("Setting ID explicitly is not allowed: %s", idByAgAttribute);
+            try {
+                o = context.getType().getConstructor().newInstance();
+            } catch (Exception e) {
+                throw AgException.badRequest(e, "Unable to instantiate object of type: %s", context.getType().getName());
             }
 
-            AgEntity<Object> agEntity = context.getEntity().getAgEntity();
-            EntityType<Object> entity = metamodel.entity(context.getType());
-            Map<Attribute<?, ?>, Object> idByJpaAttribute = mapToDbAttributes(agEntity, idByAgAttribute);
+            Map<String, Object> idByAgAttribute = update.getId();
 
-            // need to make an additional check that the AgId is unique
-            checkExisting(entityManager, agEntity, idByAgAttribute);
-            createSingleFromIdValues(entity, idByJpaAttribute, idByAgAttribute, o);
+            // set explicit ID
+            if (idByAgAttribute != null) {
+                if (context.isIdUpdatesDisallowed() && update.isExplicitId()) {
+                    throw AgException.badRequest("Setting ID explicitly is not allowed: %s", idByAgAttribute);
+                }
+
+                AgEntity<Object> agEntity = context.getEntity().getAgEntity();
+                EntityType<Object> entity = metamodel.entity(context.getType());
+                Map<Attribute<?, ?>, Object> idByJpaAttribute = mapToDbAttributes(agEntity, idByAgAttribute);
+
+                // need to make an additional check that the AgId is unique
+                checkExisting(entityManager, agEntity, idByAgAttribute);
+                createSingleFromIdValues(entity, idByJpaAttribute, idByAgAttribute, o);
+            }
+
+            mergeChanges(context, update, o, relator);
+            entityManager.persist(o);
+            relator.relateToParent(o);
+        } catch (Throwable ex) {
+            if (entityManager != null) {
+                entityManager.close();
+            }
         }
-
-        mergeChanges(context, update, o, relator);
-        entityManager.persist(o);
-        relator.relateToParent(o);
     }
 
     protected void update(UpdateContext<Object> context, ObjectRelator relator, Object o, EntityUpdate<Object> update) {
+
         EntityManager entityManager = JpaUpdateStartStage.entityManager(context);
-        mergeChanges(context, update, o, relator);
-        relator.relateToParent(o);
-        entityManager.merge(o);
+        try {
+            mergeChanges(context, update, o, relator);
+            relator.relateToParent(o);
+            entityManager.merge(o);
+        } catch (Throwable ex) {
+            if (entityManager != null) {
+                entityManager.close();
+            }
+        }
     }
 
     // translate "id" expressed in terms on public Ag names to Cayenne DbAttributes
@@ -152,7 +171,7 @@ public class JpaMergeChangesStage extends UpdateMergeChangesStage {
             Map<String, Object> idByAgAttribute) {
 
         List<?> resultList = queryAssembler.createByIdQuery(agEntity, idByAgAttribute).build(entityManager).getResultList();
-        if(!resultList.isEmpty()) {
+        if (!resultList.isEmpty()) {
             throw AgException.badRequest("Can't create '%s' with id %s - already exists",
                     agEntity.getName(),
                     CompoundObjectId.mapToString(idByAgAttribute));
@@ -161,12 +180,12 @@ public class JpaMergeChangesStage extends UpdateMergeChangesStage {
 
     private void createSingleFromIdValues(
             EntityType<Object> entity,
-            Map<Attribute<?,?>, Object> idByDbAttribute,
+            Map<Attribute<?, ?>, Object> idByDbAttribute,
             Map<String, Object> idByAgAttribute,
             Object o) {
 
-        for (Map.Entry<Attribute<?,?>, Object> idPart : idByDbAttribute.entrySet()) {
-            Attribute<?,?> attribute = idPart.getKey();
+        for (Map.Entry<Attribute<?, ?>, Object> idPart : idByDbAttribute.entrySet()) {
+            Attribute<?, ?> attribute = idPart.getKey();
             if (attribute == null) {
                 throw AgException.badRequest("Can't create '%s' with id %s - not an ID DB attribute: %s",
                         entity.getName(),
@@ -181,74 +200,80 @@ public class JpaMergeChangesStage extends UpdateMergeChangesStage {
     private void mergeChanges(UpdateContext<Object> context, EntityUpdate<Object> entityUpdate, Object o, ObjectRelator relator) {
 
         EntityManager manager = JpaUpdateStartStage.entityManager(context);
-        EntityType<Object> entityType = metamodel.entity(entityUpdate.getEntity().getType());
+        try {
+            EntityType<Object> entityType = metamodel.entity(entityUpdate.getEntity().getType());
 
-        // attributes
-        for (Map.Entry<String, Object> e : entityUpdate.getValues().entrySet()) {
-            JpaUtil.writeProperty(o, entityType.getAttribute(e.getKey()), e.getValue());
-        }
-
-        // relationships
-        for (Map.Entry<String, Set<Object>> e : entityUpdate.getRelatedIds().entrySet()) {
-            Attribute<?, ?> attribute = entityType.getAttribute(e.getKey());
-            AgRelationship agRelationship = entityUpdate.getEntity().getRelationship(e.getKey());
-
-            // sanity check
-            if (agRelationship == null) {
-                continue;
+            // attributes
+            for (Map.Entry<String, Object> e : entityUpdate.getValues().entrySet()) {
+                JpaUtil.writeProperty(o, entityType.getAttribute(e.getKey()), e.getValue());
             }
 
-            final Set<Object> relatedIds = e.getValue();
-            if (relatedIds == null || relatedIds.isEmpty() || allElementsNull(relatedIds)) {
-                relator.unrelateAll(agRelationship, o);
-                continue;
-            }
+            // relationships
+            for (Map.Entry<String, Set<Object>> e : entityUpdate.getRelatedIds().entrySet()) {
+                Attribute<?, ?> attribute = entityType.getAttribute(e.getKey());
+                AgRelationship agRelationship = entityUpdate.getEntity().getRelationship(e.getKey());
 
-            if (!agRelationship.isToMany() && relatedIds.size() > 1) {
-                throw AgException.badRequest(
-                        "Relationship is to-one, but received update with multiple objects: %s",
-                        agRelationship.getName());
-            }
-
-
-            relator.unrelateAll(agRelationship, o, new RelationshipUpdate() {
-                @Override
-                public boolean containsRelatedObject(Object relatedObject) {
-                    Object id = manager.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(relatedObject);
-                    return relatedIds.contains(id);
-                }
-
-                @Override
-                public void removeUpdateForRelatedObject(Object relatedObject) {
-                    Object id = manager.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(relatedObject);
-                    relatedIds.remove(id);
-                }
-            });
-
-            for (Object relatedId : relatedIds) {
-                if (relatedId == null) {
+                // sanity check
+                if (agRelationship == null) {
                     continue;
                 }
 
-                Class<?> type = attribute.getJavaType();
-                if(attribute.isCollection() && (attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.MANY_TO_MANY
-                        || attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.ONE_TO_MANY)) {
-                    type = ((PluralAttribute<?,?,?>)attribute).getElementType().getJavaType();
-                }
-                // TODO: to-many collections will brake here!
-                Object related = manager.find(type, relatedId);
-
-                if (related == null) {
-                    throw AgException.notFound("Related object '%s' with ID '%s' is not found",
-                            metamodel.entity(attribute.getJavaType()).getName(),
-                            e.getValue());
+                final Set<Object> relatedIds = e.getValue();
+                if (relatedIds == null || relatedIds.isEmpty() || allElementsNull(relatedIds)) {
+                    relator.unrelateAll(agRelationship, o);
+                    continue;
                 }
 
-                relator.relate(agRelationship, o, related);
+                if (!agRelationship.isToMany() && relatedIds.size() > 1) {
+                    throw AgException.badRequest(
+                            "Relationship is to-one, but received update with multiple objects: %s",
+                            agRelationship.getName());
+                }
+
+
+                relator.unrelateAll(agRelationship, o, new RelationshipUpdate() {
+                    @Override
+                    public boolean containsRelatedObject(Object relatedObject) {
+                        Object id = manager.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(relatedObject);
+                        return relatedIds.contains(id);
+                    }
+
+                    @Override
+                    public void removeUpdateForRelatedObject(Object relatedObject) {
+                        Object id = manager.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(relatedObject);
+                        relatedIds.remove(id);
+                    }
+                });
+
+                for (Object relatedId : relatedIds) {
+                    if (relatedId == null) {
+                        continue;
+                    }
+
+                    Class<?> type = attribute.getJavaType();
+                    if (attribute.isCollection() && (attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.MANY_TO_MANY
+                            || attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.ONE_TO_MANY)) {
+                        type = ((PluralAttribute<?, ?, ?>) attribute).getElementType().getJavaType();
+                    }
+                    // TODO: to-many collections will brake here!
+                    Object related = manager.find(type, relatedId);
+
+                    if (related == null) {
+                        throw AgException.notFound("Related object '%s' with ID '%s' is not found",
+                                metamodel.entity(attribute.getJavaType()).getName(),
+                                e.getValue());
+                    }
+
+                    relator.relate(agRelationship, o, related);
+                }
+            }
+
+            entityUpdate.setMergedTo(o);
+        } catch (Throwable ex) {
+            if (manager != null) {
+                manager.close();
             }
         }
-
-        entityUpdate.setMergedTo(o);
     }
 
     private boolean allElementsNull(Collection<?> elements) {
@@ -265,40 +290,47 @@ public class JpaMergeChangesStage extends UpdateMergeChangesStage {
     protected ObjectRelator createRelator(UpdateContext<Object> context) {
         final EntityParent<?> parent = context.getParent();
         EntityManager manager = JpaUpdateStartStage.entityManager(context);
-        EntityType<Object> entityType = metamodel.entity(context.getEntity().getType());
-        if (parent == null) {
-            return new ObjectRelator(entityType, manager);
-        }
+        try {
+            EntityType<Object> entityType = metamodel.entity(context.getEntity().getType());
+            if (parent == null) {
+                return new ObjectRelator(entityType, manager);
+            }
 
-        EntityType<?> parentEntityType = metamodel.entity(parent.getType());
-        AgEntity<?> parentAgEntity = dataMap.getEntity(context.getParent().getType());
-        List<?> resultList = queryAssembler.createByIdQuery(parentAgEntity, parent.getId())
-                .build(manager)
-                .getResultList();
-        if (resultList.isEmpty()) {
-            throw AgException.notFound("No parent object for ID '%s' and entity '%s'", parent.getId(), entityType.getName());
-        }
+            EntityType<?> parentEntityType = metamodel.entity(parent.getType());
+            AgEntity<?> parentAgEntity = dataMap.getEntity(context.getParent().getType());
+            List<?> resultList = queryAssembler.createByIdQuery(parentAgEntity, parent.getId())
+                    .build(manager)
+                    .getResultList();
+            if (resultList.isEmpty()) {
+                throw AgException.notFound("No parent object for ID '%s' and entity '%s'", parent.getId(), entityType.getName());
+            }
 
-        Object parentObject = resultList.get(0);
+            Object parentObject = resultList.get(0);
 
-        Attribute<?, ?> attribute = parentEntityType.getAttribute(parent.getRelationship());
-        if (attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.MANY_TO_MANY
-                || attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.ONE_TO_MANY) {
-            return new ObjectRelator(entityType, manager) {
-                @Override
-                public void relateToParent(Object object) {
-                    JpaUtil.setToManyTarget(parentObject, (PluralAttribute<?,?,?>)attribute, object);
-                    manager.merge(parentObject);
-                }
-            };
-        } else {
-            return new ObjectRelator(entityType, manager) {
-                @Override
-                public void relateToParent(Object object) {
-                    JpaUtil.setToOneTarget(parentObject, attribute, object);
-                    manager.merge(parentObject);
-                }
-            };
+            Attribute<?, ?> attribute = parentEntityType.getAttribute(parent.getRelationship());
+            if (attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.MANY_TO_MANY
+                    || attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.ONE_TO_MANY) {
+                return new ObjectRelator(entityType, manager) {
+                    @Override
+                    public void relateToParent(Object object) {
+                        JpaUtil.setToManyTarget(parentObject, (PluralAttribute<?, ?, ?>) attribute, object);
+                        manager.merge(parentObject);
+                    }
+                };
+            } else {
+                return new ObjectRelator(entityType, manager) {
+                    @Override
+                    public void relateToParent(Object object) {
+                        JpaUtil.setToOneTarget(parentObject, attribute, object);
+                        manager.merge(parentObject);
+                    }
+                };
+            }
+        } catch (Throwable ex) {
+            if (manager != null) {
+                manager.close();
+            }
+            throw ex;
         }
     }
 
