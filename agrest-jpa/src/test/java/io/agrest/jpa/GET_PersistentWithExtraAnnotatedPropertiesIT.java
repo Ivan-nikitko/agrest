@@ -4,6 +4,8 @@ import io.agrest.DataResponse;
 import io.agrest.jaxrs2.AgJaxrs;
 import io.agrest.jpa.model.E14;
 import io.agrest.jpa.model.E15;
+import io.agrest.jpa.model.E15E1;
+import io.agrest.jpa.model.E15E5;
 import io.agrest.jpa.unit.AgJpaTester;
 import io.agrest.jpa.unit.DbTest;
 import io.bootique.junit5.BQTestTool;
@@ -20,7 +22,7 @@ public class GET_PersistentWithExtraAnnotatedPropertiesIT extends DbTest {
     @BQTestTool
     static final AgJpaTester tester = tester(Resource.class)
 
-            .entities(E14.class, E15.class)
+            .entities(E14.class, E15E1.class, E15E5.class, E15.class)
             .build();
 
     // TODO: each test is using the same dataset... if we could only do data cleanup once per class, then we can load

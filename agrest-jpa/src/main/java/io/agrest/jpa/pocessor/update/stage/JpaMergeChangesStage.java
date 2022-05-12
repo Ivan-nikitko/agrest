@@ -22,6 +22,7 @@ import io.agrest.runtime.processor.update.ChangeOperationType;
 import io.agrest.runtime.processor.update.UpdateContext;
 import io.agrest.runtime.processor.update.stage.UpdateMergeChangesStage;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceException;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.Metamodel;
@@ -129,9 +130,13 @@ public class JpaMergeChangesStage extends UpdateMergeChangesStage {
             mergeChanges(context, update, o, relator);
             entityManager.persist(o);
             relator.relateToParent(o);
-        } catch (Throwable ex) {
+        } catch (PersistenceException ex){
+            throw ex;
+        }
+        catch (Throwable ex) {
             if (entityManager != null) {
                 entityManager.close();
+                throw ex;
             }
         }
     }

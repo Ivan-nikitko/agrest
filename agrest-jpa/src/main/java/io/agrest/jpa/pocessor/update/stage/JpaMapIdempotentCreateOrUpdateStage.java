@@ -25,7 +25,7 @@ public class JpaMapIdempotentCreateOrUpdateStage extends JpaMapCreateOrUpdateSta
             UpdateMap<T> updateMap) {
 
         if (!updateMap.getNoId().isEmpty()) {
-            throw AgException.badRequest("Request is not idempotent.");
+   //         throw AgException.badRequest("Request is not idempotent.");
         }
 
         super.collectCreateOps(context, updateMap);

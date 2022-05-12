@@ -23,6 +23,29 @@ public class PUT_Related_IT extends DbTest {
                     E13.class, E15E1.class, E15E5.class, E14.class, E15.class, E1.class, E5.class)
             .build();
 
+
+    @Test
+    public void test_Connection_leaks() {
+        for (int i = 0; i < 6; i++) {
+
+            System.out.println(i);
+            tester.e8().insertColumns("ID", "NAME")
+                    .values(i, "xxx")
+                    .values(i + 10, "xxx").exec();
+
+            tester.e7().insertColumns("ID", "NAME", "E8_ID")
+                    .values(i, "zzz", i)
+                    .values(i + 10, "yyy", i + 10)
+                    .values(i + 20, "zzz", i + 20).exec();
+
+            // this must add E7 with id=1, update - with id=8, delete - with id=9
+            tester.target("/e8/15/e7s")
+                    .put("[  {\"id\":1,\"name\":\"newname\"}, {\"id\":8,\"name\":\"123\"} ]");
+        }
+    }
+
+
+
     @Test
     public void testRelate_EmptyPutWithID() {
 

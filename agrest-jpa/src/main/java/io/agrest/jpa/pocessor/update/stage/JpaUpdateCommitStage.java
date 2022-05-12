@@ -23,6 +23,8 @@ public class JpaUpdateCommitStage extends UpdateCommitStage {
                 entityManager.close();
             }
             throw ex;
+        }finally {
+            entityManager.close();
         }
     }
 }
