@@ -1,11 +1,13 @@
-package io.agrest.runtime.processor.update.provider;
+package io.agrest.jpa.pocessor.update.provider;
 
 import io.agrest.UpdateStage;
+import io.agrest.jpa.pocessor.JpaIdempotentCreateOrUpdateProcessorFactory;
 import io.agrest.processor.Processor;
 import io.agrest.runtime.AgExceptionMappers;
 import io.agrest.runtime.processor.update.IdempotentCreateOrUpdateProcessorFactory;
 import io.agrest.runtime.processor.update.UpdateContext;
 import io.agrest.runtime.processor.update.UpdateFlavorDIKeys;
+import io.agrest.runtime.processor.update.provider.IdempotentCreateOrUpdateProcessorFactoryProvider;
 import io.agrest.runtime.processor.update.stage.UpdateApplyServerParamsStage;
 import io.agrest.runtime.processor.update.stage.UpdateAuthorizeChangesStage;
 import io.agrest.runtime.processor.update.stage.UpdateCommitStage;
@@ -23,15 +25,13 @@ import org.apache.cayenne.di.Provider;
 
 import java.util.EnumMap;
 
-/**
- * @since 5.0
- */
-public class IdempotentCreateOrUpdateProcessorFactoryProvider implements Provider<IdempotentCreateOrUpdateProcessorFactory> {
+
+public class JpaIdempotentCreateOrUpdateProcessorFactoryProvider implements Provider<IdempotentCreateOrUpdateProcessorFactory> {
 
     protected final AgExceptionMappers exceptionMappers;
     protected final EnumMap<UpdateStage, Processor<UpdateContext<?>>> stages;
 
-    public IdempotentCreateOrUpdateProcessorFactoryProvider(
+    public JpaIdempotentCreateOrUpdateProcessorFactoryProvider(
             @Inject UpdateStartStage startStage,
             @Inject UpdateParseRequestStage parseRequestStage,
             @Inject UpdateCreateResourceEntityStage createResourceEntityStage,
@@ -64,6 +64,46 @@ public class IdempotentCreateOrUpdateProcessorFactoryProvider implements Provide
 
     @Override
     public IdempotentCreateOrUpdateProcessorFactory get() throws DIRuntimeException {
-        return new IdempotentCreateOrUpdateProcessorFactory(stages, exceptionMappers);
+        return new JpaIdempotentCreateOrUpdateProcessorFactory(stages, exceptionMappers);
     }
 }
+
+
+/*
+
+public class JpaIdempotentCreateOrUpdateProcessorFactoryProvider extends IdempotentCreateOrUpdateProcessorFactoryProvider {
+
+    public JpaIdempotentCreateOrUpdateProcessorFactoryProvider(UpdateStartStage startStage,
+                                                               UpdateParseRequestStage parseRequestStage,
+                                                               UpdateCreateResourceEntityStage createResourceEntityStage,
+                                                               UpdateApplyServerParamsStage applyServerParamsStage,
+                                                               UpdateMapChangesStage mapChangesStage,
+                                                               UpdateAuthorizeChangesStage authorizeChangesStage,
+                                                               UpdateMergeChangesStage mergeStage,
+                                                               UpdateCommitStage commitStage,
+                                                               UpdateFillResponseStage fillResponseStage,
+                                                               UpdateFilterResultStage filterResultStage,
+                                                               UpdateEncoderInstallStage encoderInstallStage,
+                                                               AgExceptionMappers exceptionMappers) {
+        super(startStage,
+                parseRequestStage,
+                createResourceEntityStage,
+                applyServerParamsStage,
+                mapChangesStage,
+                authorizeChangesStage,
+                mergeStage,
+                commitStage,
+                fillResponseStage,
+                filterResultStage,
+                encoderInstallStage,
+                exceptionMappers);
+    }
+
+
+    @Override
+    public IdempotentCreateOrUpdateProcessorFactory get() throws DIRuntimeException {
+        return new JpaIdempotentCreateOrUpdateProcessorFactory(stages, exceptionMappers);
+    }
+}
+*/
+

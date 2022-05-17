@@ -14,6 +14,8 @@ import io.agrest.jpa.pocessor.delete.stage.JpaDeleteStartStage;
 import io.agrest.jpa.pocessor.select.stage.JpaSelectApplyServerParamsStage;
 import io.agrest.jpa.pocessor.unrelate.stage.JpaUnrelateDataStoreStage;
 import io.agrest.jpa.pocessor.unrelate.stage.JpaUnrelateStartStage;
+import io.agrest.jpa.pocessor.update.provider.JpaIdempotentCreateOrUpdateProcessorFactoryProvider;
+import io.agrest.jpa.pocessor.update.provider.JpaIdempotentFullSyncProcessorFactoryProvider;
 import io.agrest.jpa.pocessor.update.stage.JpaCreatedOrOkResponseStage;
 import io.agrest.jpa.pocessor.update.stage.JpaCreatedResponseStage;
 import io.agrest.jpa.pocessor.update.stage.JpaMapCreateOrUpdateStage;
@@ -32,7 +34,10 @@ import io.agrest.runtime.processor.delete.stage.DeleteStartStage;
 import io.agrest.runtime.processor.select.stage.SelectApplyServerParamsStage;
 import io.agrest.runtime.processor.unrelate.stage.UnrelateStartStage;
 import io.agrest.runtime.processor.unrelate.stage.UnrelateUpdateDateStoreStage;
+import io.agrest.runtime.processor.update.IdempotentCreateOrUpdateProcessorFactory;
+import io.agrest.runtime.processor.update.IdempotentFullSyncProcessorFactory;
 import io.agrest.runtime.processor.update.UpdateFlavorDIKeys;
+import io.agrest.runtime.processor.update.provider.IdempotentCreateOrUpdateProcessorFactoryProvider;
 import io.agrest.runtime.processor.update.stage.UpdateApplyServerParamsStage;
 import io.agrest.runtime.processor.update.stage.UpdateCommitStage;
 import io.agrest.runtime.processor.update.stage.UpdateFillResponseStage;
@@ -72,6 +77,8 @@ public class AgJpaModule implements Module {
         binder.bind(UpdateApplyServerParamsStage.class).to(JpaUpdateApplyServerParamsStage.class);
         binder.bind(UpdateMergeChangesStage.class).to(JpaMergeChangesStage.class);
         binder.bind(UpdateCommitStage.class).to(JpaUpdateCommitStage.class);
+        binder.bind(IdempotentCreateOrUpdateProcessorFactory.class).toProvider(JpaIdempotentCreateOrUpdateProcessorFactoryProvider.class);
+        binder.bind(IdempotentFullSyncProcessorFactory.class).toProvider(JpaIdempotentFullSyncProcessorFactoryProvider.class);
 
         binder.bind(Key.get(UpdateMapChangesStage.class, UpdateFlavorDIKeys.CREATE)).to(JpaMapCreateStage.class);
         binder.bind(Key.get(UpdateMapChangesStage.class, UpdateFlavorDIKeys.CREATE_OR_UPDATE)).to(JpaMapCreateOrUpdateStage.class);

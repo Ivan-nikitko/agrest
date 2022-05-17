@@ -7,7 +7,7 @@ import io.agrest.runtime.AgExceptionMappers;
  */
 public class ExceptionMappingProcessorDecorator<C extends ProcessingContext<?>> implements Processor<C> {
 
-    private final Processor<C> delegate;
+    protected final Processor<C> delegate;
     private final AgExceptionMappers exceptionMappers;
 
     public ExceptionMappingProcessorDecorator(Processor<C> delegate, AgExceptionMappers exceptionMappers) {

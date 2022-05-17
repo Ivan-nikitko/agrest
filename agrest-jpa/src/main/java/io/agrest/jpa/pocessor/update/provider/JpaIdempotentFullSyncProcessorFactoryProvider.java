@@ -1,37 +1,62 @@
-package io.agrest.runtime.processor.update.provider;
+package io.agrest.jpa.pocessor.update.provider;
 
 import io.agrest.UpdateStage;
+import io.agrest.jpa.pocessor.JpaIdempotentFullSyncProcessorFactory;
 import io.agrest.processor.Processor;
 import io.agrest.runtime.AgExceptionMappers;
 import io.agrest.runtime.processor.update.IdempotentFullSyncProcessorFactory;
 import io.agrest.runtime.processor.update.UpdateContext;
 import io.agrest.runtime.processor.update.UpdateFlavorDIKeys;
-import io.agrest.runtime.processor.update.stage.UpdateApplyServerParamsStage;
-import io.agrest.runtime.processor.update.stage.UpdateAuthorizeChangesStage;
-import io.agrest.runtime.processor.update.stage.UpdateCommitStage;
-import io.agrest.runtime.processor.update.stage.UpdateCreateResourceEntityStage;
-import io.agrest.runtime.processor.update.stage.UpdateEncoderInstallStage;
-import io.agrest.runtime.processor.update.stage.UpdateFillResponseStage;
-import io.agrest.runtime.processor.update.stage.UpdateFilterResultStage;
-import io.agrest.runtime.processor.update.stage.UpdateMapChangesStage;
-import io.agrest.runtime.processor.update.stage.UpdateMergeChangesStage;
-import io.agrest.runtime.processor.update.stage.UpdateParseRequestStage;
-import io.agrest.runtime.processor.update.stage.UpdateStartStage;
+import io.agrest.runtime.processor.update.provider.IdempotentFullSyncProcessorFactoryProvider;
+import io.agrest.runtime.processor.update.stage.*;
 import org.apache.cayenne.di.DIRuntimeException;
 import org.apache.cayenne.di.Inject;
 import org.apache.cayenne.di.Provider;
 
 import java.util.EnumMap;
+/*
 
-/**
- * @since 5.0
- */
-public class IdempotentFullSyncProcessorFactoryProvider implements Provider<IdempotentFullSyncProcessorFactory> {
+public class JpaIdempotentFullSyncProcessorFactoryProvider extends IdempotentFullSyncProcessorFactoryProvider {
+
+    public JpaIdempotentFullSyncProcessorFactoryProvider(UpdateStartStage startStage,
+                                                         UpdateParseRequestStage parseRequestStage,
+                                                         UpdateCreateResourceEntityStage createResourceEntityStage,
+                                                         UpdateApplyServerParamsStage applyServerParamsStage,
+                                                         UpdateMapChangesStage mapChangesStage,
+                                                         UpdateAuthorizeChangesStage authorizeChangesStage,
+                                                         UpdateMergeChangesStage mergeStage,
+                                                         UpdateCommitStage commitStage,
+                                                         UpdateFillResponseStage fillResponseStage,
+                                                         UpdateFilterResultStage filterResultStage,
+                                                         UpdateEncoderInstallStage encoderInstallStage,
+                                                         AgExceptionMappers exceptionMappers) {
+        super(startStage,
+                parseRequestStage,
+                createResourceEntityStage,
+                applyServerParamsStage,
+                mapChangesStage,
+                authorizeChangesStage,
+                mergeStage,
+                commitStage,
+                fillResponseStage,
+                filterResultStage,
+                encoderInstallStage,
+                exceptionMappers);
+    }
+
+    @Override
+    public IdempotentFullSyncProcessorFactory get() throws DIRuntimeException {
+        return new JpaIdempotentFullSyncProcessorFactory(idempotentFullSyncStages, exceptionMappers);
+    }
+}
+*/
+
+public class JpaIdempotentFullSyncProcessorFactoryProvider implements Provider<IdempotentFullSyncProcessorFactory> {
 
     protected final AgExceptionMappers exceptionMappers;
     protected final EnumMap<UpdateStage, Processor<UpdateContext<?>>> idempotentFullSyncStages;
 
-    public IdempotentFullSyncProcessorFactoryProvider(
+    public JpaIdempotentFullSyncProcessorFactoryProvider(
             @Inject UpdateStartStage startStage,
             @Inject UpdateParseRequestStage parseRequestStage,
             @Inject UpdateCreateResourceEntityStage createResourceEntityStage,
@@ -64,6 +89,6 @@ public class IdempotentFullSyncProcessorFactoryProvider implements Provider<Idem
 
     @Override
     public IdempotentFullSyncProcessorFactory get() throws DIRuntimeException {
-       return new IdempotentFullSyncProcessorFactory(idempotentFullSyncStages, exceptionMappers);
+        return new JpaIdempotentFullSyncProcessorFactory(idempotentFullSyncStages, exceptionMappers);
     }
 }
