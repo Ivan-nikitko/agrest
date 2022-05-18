@@ -1,6 +1,7 @@
 package io.agrest.runtime.processor.update;
 
 import io.agrest.UpdateStage;
+import io.agrest.processor.ExceptionMappingProcessorDecoratorFactory;
 import io.agrest.processor.Processor;
 import io.agrest.processor.ProcessorFactory;
 import io.agrest.runtime.AgExceptionMappers;
@@ -13,7 +14,9 @@ import java.util.EnumMap;
 public abstract class BaseUpdateProcessorFactory extends ProcessorFactory<UpdateStage, UpdateContext<?>> {
 
     protected BaseUpdateProcessorFactory(
-            EnumMap<UpdateStage, Processor<UpdateContext<?>>> defaultStages, AgExceptionMappers exceptionMappers) {
-        super(defaultStages, exceptionMappers);
+            EnumMap<UpdateStage, Processor<UpdateContext<?>>> defaultStages,
+            AgExceptionMappers exceptionMappers,
+            ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory) {
+        super(defaultStages, exceptionMappers, processorDecoratorFactory);
     }
 }

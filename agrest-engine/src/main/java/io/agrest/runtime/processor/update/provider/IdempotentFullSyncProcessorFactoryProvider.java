@@ -1,6 +1,7 @@
 package io.agrest.runtime.processor.update.provider;
 
 import io.agrest.UpdateStage;
+import io.agrest.processor.ExceptionMappingProcessorDecoratorFactory;
 import io.agrest.processor.Processor;
 import io.agrest.runtime.AgExceptionMappers;
 import io.agrest.runtime.processor.update.IdempotentFullSyncProcessorFactory;
@@ -30,6 +31,7 @@ public class IdempotentFullSyncProcessorFactoryProvider implements Provider<Idem
 
     private final AgExceptionMappers exceptionMappers;
     private final EnumMap<UpdateStage, Processor<UpdateContext<?>>> idempotentFullSyncStages;
+    private final ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory;
 
     public IdempotentFullSyncProcessorFactoryProvider(
             @Inject UpdateStartStage startStage,
@@ -43,10 +45,13 @@ public class IdempotentFullSyncProcessorFactoryProvider implements Provider<Idem
             @Inject(UpdateFlavorDIKeys.IDEMPOTENT_FULL_SYNC) UpdateFillResponseStage fillResponseStage,
             @Inject UpdateFilterResultStage filterResultStage,
             @Inject UpdateEncoderInstallStage encoderInstallStage,
-            @Inject AgExceptionMappers exceptionMappers
+
+            @Inject AgExceptionMappers exceptionMappers,
+            @Inject ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory
     ) {
 
         this.exceptionMappers = exceptionMappers;
+        this.processorDecoratorFactory = processorDecoratorFactory;
 
         this.idempotentFullSyncStages = new EnumMap<>(UpdateStage.class);
         this.idempotentFullSyncStages.put(UpdateStage.START, startStage);
@@ -64,6 +69,6 @@ public class IdempotentFullSyncProcessorFactoryProvider implements Provider<Idem
 
     @Override
     public IdempotentFullSyncProcessorFactory get() throws DIRuntimeException {
-       return new IdempotentFullSyncProcessorFactory(idempotentFullSyncStages, exceptionMappers);
+        return new IdempotentFullSyncProcessorFactory(idempotentFullSyncStages, exceptionMappers, processorDecoratorFactory);
     }
 }

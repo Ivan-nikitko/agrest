@@ -1,6 +1,7 @@
 package io.agrest.runtime.processor.update.provider;
 
 import io.agrest.UpdateStage;
+import io.agrest.processor.ExceptionMappingProcessorDecoratorFactory;
 import io.agrest.processor.Processor;
 import io.agrest.runtime.AgExceptionMappers;
 import io.agrest.runtime.processor.update.CreateProcessorFactory;
@@ -30,6 +31,7 @@ public class CreateProcessorFactoryProvider implements Provider<CreateProcessorF
 
     private final AgExceptionMappers exceptionMappers;
     private final EnumMap<UpdateStage, Processor<UpdateContext<?>>> stages;
+    private ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory;
 
     public CreateProcessorFactoryProvider(
             @Inject UpdateStartStage startStage,
@@ -44,10 +46,12 @@ public class CreateProcessorFactoryProvider implements Provider<CreateProcessorF
             @Inject UpdateFilterResultStage filterResultStage,
             @Inject UpdateEncoderInstallStage encoderInstallStage,
 
-            @Inject AgExceptionMappers exceptionMappers
+            @Inject AgExceptionMappers exceptionMappers,
+            @Inject ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory
     ) {
 
         this.exceptionMappers = exceptionMappers;
+        this.processorDecoratorFactory = processorDecoratorFactory;
 
         this.stages = new EnumMap<>(UpdateStage.class);
         this.stages.put(UpdateStage.START, startStage);
@@ -65,6 +69,6 @@ public class CreateProcessorFactoryProvider implements Provider<CreateProcessorF
 
     @Override
     public CreateProcessorFactory get() throws DIRuntimeException {
-        return new CreateProcessorFactory(stages, exceptionMappers);
+        return new CreateProcessorFactory(stages, exceptionMappers,processorDecoratorFactory);
     }
 }

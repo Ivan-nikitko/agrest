@@ -1,6 +1,7 @@
 package io.agrest.runtime.processor.delete.provider;
 
 import io.agrest.DeleteStage;
+import io.agrest.processor.ExceptionMappingProcessorDecoratorFactory;
 import io.agrest.processor.Processor;
 import io.agrest.runtime.AgExceptionMappers;
 import io.agrest.runtime.processor.delete.DeleteContext;
@@ -22,15 +23,19 @@ public class DeleteProcessorFactoryProvider implements Provider<DeleteProcessorF
 
     private final EnumMap<DeleteStage, Processor<DeleteContext<?>>> stages;
     private final AgExceptionMappers exceptionMappers;
+    private final ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory;
 
     public DeleteProcessorFactoryProvider(
             @Inject DeleteStartStage startStage,
             @Inject DeleteMapChangesStage mapChangesStage,
             @Inject DeleteAuthorizeChangesStage authorizeChangesStage,
             @Inject DeleteInDataStoreStage deleteInDataStoreStage,
-            @Inject AgExceptionMappers exceptionMappers) {
+
+            @Inject AgExceptionMappers exceptionMappers,
+            @Inject ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory) {
 
         this.exceptionMappers = exceptionMappers;
+        this.processorDecoratorFactory = processorDecoratorFactory;
 
         stages = new EnumMap<>(DeleteStage.class);
         stages.put(DeleteStage.START, startStage);
@@ -41,6 +46,6 @@ public class DeleteProcessorFactoryProvider implements Provider<DeleteProcessorF
 
     @Override
     public DeleteProcessorFactory get() throws DIRuntimeException {
-        return new DeleteProcessorFactory(stages, exceptionMappers);
+        return new DeleteProcessorFactory(stages, exceptionMappers,processorDecoratorFactory);
     }
 }

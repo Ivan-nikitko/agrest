@@ -1,6 +1,7 @@
 package io.agrest.runtime.processor.update.provider;
 
 import io.agrest.UpdateStage;
+import io.agrest.processor.ExceptionMappingProcessorDecoratorFactory;
 import io.agrest.processor.Processor;
 import io.agrest.runtime.AgExceptionMappers;
 import io.agrest.runtime.processor.update.IdempotentCreateOrUpdateProcessorFactory;
@@ -30,6 +31,7 @@ public class IdempotentCreateOrUpdateProcessorFactoryProvider implements Provide
 
     private final AgExceptionMappers exceptionMappers;
     private final EnumMap<UpdateStage, Processor<UpdateContext<?>>> stages;
+    private ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory;
 
     public IdempotentCreateOrUpdateProcessorFactoryProvider(
             @Inject UpdateStartStage startStage,
@@ -43,10 +45,13 @@ public class IdempotentCreateOrUpdateProcessorFactoryProvider implements Provide
             @Inject(UpdateFlavorDIKeys.IDEMPOTENT_CREATE_OR_UPDATE) UpdateFillResponseStage fillResponseStage,
             @Inject UpdateFilterResultStage filterResultStage,
             @Inject UpdateEncoderInstallStage encoderInstallStage,
-            @Inject AgExceptionMappers exceptionMappers
+
+            @Inject AgExceptionMappers exceptionMappers,
+            @Inject ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory
     ) {
 
         this.exceptionMappers = exceptionMappers;
+        this.processorDecoratorFactory = processorDecoratorFactory;
 
         this.stages = new EnumMap<>(UpdateStage.class);
         this.stages.put(UpdateStage.START, startStage);
@@ -64,6 +69,6 @@ public class IdempotentCreateOrUpdateProcessorFactoryProvider implements Provide
 
     @Override
     public IdempotentCreateOrUpdateProcessorFactory get() throws DIRuntimeException {
-        return new IdempotentCreateOrUpdateProcessorFactory(stages, exceptionMappers);
+        return new IdempotentCreateOrUpdateProcessorFactory(stages, exceptionMappers, processorDecoratorFactory);
     }
 }

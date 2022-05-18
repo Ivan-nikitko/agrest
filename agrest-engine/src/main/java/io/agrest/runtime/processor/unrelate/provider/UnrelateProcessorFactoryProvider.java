@@ -1,6 +1,7 @@
 package io.agrest.runtime.processor.unrelate.provider;
 
 import io.agrest.UnrelateStage;
+import io.agrest.processor.ExceptionMappingProcessorDecoratorFactory;
 import io.agrest.processor.Processor;
 import io.agrest.runtime.AgExceptionMappers;
 import io.agrest.runtime.processor.unrelate.UnrelateContext;
@@ -20,15 +21,18 @@ public class UnrelateProcessorFactoryProvider implements Provider<UnrelateProces
 
     private final AgExceptionMappers exceptionMappers;
     private final EnumMap<UnrelateStage, Processor<UnrelateContext<?>>> stages;
+    private final ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory;
 
     public UnrelateProcessorFactoryProvider(
             @Inject UnrelateStartStage startStage,
             @Inject UnrelateUpdateDateStoreStage dataStoreStage,
 
-            @Inject AgExceptionMappers exceptionMappers
+            @Inject AgExceptionMappers exceptionMappers,
+            @Inject ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory
     ) {
 
         this.exceptionMappers = exceptionMappers;
+        this.processorDecoratorFactory = processorDecoratorFactory;
 
         stages = new EnumMap<>(UnrelateStage.class);
         stages.put(UnrelateStage.START, startStage);
@@ -37,6 +41,6 @@ public class UnrelateProcessorFactoryProvider implements Provider<UnrelateProces
 
     @Override
     public UnrelateProcessorFactory get() throws DIRuntimeException {
-        return new UnrelateProcessorFactory(stages, exceptionMappers);
+        return new UnrelateProcessorFactory(stages, exceptionMappers, processorDecoratorFactory);
     }
 }

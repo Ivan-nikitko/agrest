@@ -1,17 +1,12 @@
 package io.agrest.runtime.processor.select.provider;
 
 import io.agrest.SelectStage;
+import io.agrest.processor.ExceptionMappingProcessorDecoratorFactory;
 import io.agrest.processor.Processor;
 import io.agrest.runtime.AgExceptionMappers;
 import io.agrest.runtime.processor.select.SelectContext;
 import io.agrest.runtime.processor.select.SelectProcessorFactory;
-import io.agrest.runtime.processor.select.stage.SelectAssembleQueryStage;
-import io.agrest.runtime.processor.select.stage.SelectCreateResourceEntityStage;
-import io.agrest.runtime.processor.select.stage.SelectEncoderInstallStage;
-import io.agrest.runtime.processor.select.stage.SelectFetchDataStage;
-import io.agrest.runtime.processor.select.stage.SelectFilterResultStage;
-import io.agrest.runtime.processor.select.stage.SelectApplyServerParamsStage;
-import io.agrest.runtime.processor.select.stage.SelectStartStage;
+import io.agrest.runtime.processor.select.stage.*;
 import org.apache.cayenne.di.DIRuntimeException;
 import org.apache.cayenne.di.Inject;
 import org.apache.cayenne.di.Provider;
@@ -25,6 +20,7 @@ public class SelectProcessorFactoryProvider implements Provider<SelectProcessorF
 
     private final EnumMap<SelectStage, Processor<SelectContext<?>>> stages;
     private final AgExceptionMappers exceptionMappers;
+    private ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory;
 
     public SelectProcessorFactoryProvider(
             @Inject SelectStartStage startStage,
@@ -34,9 +30,12 @@ public class SelectProcessorFactoryProvider implements Provider<SelectProcessorF
             @Inject SelectFetchDataStage fetchDataStage,
             @Inject SelectFilterResultStage filterResultStage,
             @Inject SelectEncoderInstallStage encoderInstallStage,
-            @Inject AgExceptionMappers exceptionMappers) {
+
+            @Inject AgExceptionMappers exceptionMappers,
+            @Inject ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory) {
 
         this.exceptionMappers = exceptionMappers;
+        this.processorDecoratorFactory = processorDecoratorFactory;
 
         stages = new EnumMap<>(SelectStage.class);
         stages.put(SelectStage.START, startStage);
@@ -50,6 +49,6 @@ public class SelectProcessorFactoryProvider implements Provider<SelectProcessorF
 
     @Override
     public SelectProcessorFactory get() throws DIRuntimeException {
-        return new SelectProcessorFactory(stages, exceptionMappers);
+        return new SelectProcessorFactory(stages, exceptionMappers, processorDecoratorFactory);
     }
 }

@@ -15,11 +15,15 @@ public class ProcessorFactory<E extends Enum<E>, C extends ProcessingContext<?>>
 
     private final EnumMap<E, Processor<C>> defaultStages;
     private final AgExceptionMappers exceptionMappers;
+    private final ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory;
     private final Processor<C> defaultProcessor;
 
-    public ProcessorFactory(EnumMap<E, Processor<C>> defaultStages, AgExceptionMappers exceptionMappers) {
+    public ProcessorFactory(EnumMap<E, Processor<C>> defaultStages,
+                            AgExceptionMappers exceptionMappers,
+                            ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory) {
         this.exceptionMappers = Objects.requireNonNull(exceptionMappers);
         this.defaultStages = Objects.requireNonNull(defaultStages);
+        this.processorDecoratorFactory = processorDecoratorFactory;
         this.defaultProcessor = composeStages(defaultStages);
     }
 
@@ -37,7 +41,7 @@ public class ProcessorFactory<E extends Enum<E>, C extends ProcessingContext<?>>
             p = p == null ? s : p.andThen(s);
         }
 
-        return new ExceptionMappingProcessorDecorator<>(p, exceptionMappers);
+        return processorDecoratorFactory.get(p,exceptionMappers);
     }
 
     public Processor<C> createProcessor() {

@@ -1,14 +1,15 @@
 package io.agrest.pojo.runtime;
 
 import io.agrest.SelectStage;
+import io.agrest.processor.ExceptionMappingProcessorDecoratorFactory;
 import io.agrest.processor.Processor;
 import io.agrest.processor.ProcessorOutcome;
 import io.agrest.runtime.AgExceptionMappers;
+import io.agrest.runtime.processor.select.SelectContext;
+import io.agrest.runtime.processor.select.SelectProcessorFactory;
 import io.agrest.runtime.processor.select.stage.SelectApplyServerParamsStage;
 import io.agrest.runtime.processor.select.stage.SelectCreateResourceEntityStage;
 import io.agrest.runtime.processor.select.stage.SelectEncoderInstallStage;
-import io.agrest.runtime.processor.select.SelectContext;
-import io.agrest.runtime.processor.select.SelectProcessorFactory;
 import io.agrest.runtime.processor.select.stage.SelectStartStage;
 import org.apache.cayenne.di.DIRuntimeException;
 import org.apache.cayenne.di.Inject;
@@ -20,6 +21,7 @@ public class PojoSelectProcessorFactoryProvider implements Provider<SelectProces
 
     private final AgExceptionMappers exceptionMappers;
     private final EnumMap<SelectStage, Processor<SelectContext<?>>> stages;
+    private final ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory;
 
     public PojoSelectProcessorFactoryProvider(
             @Inject SelectStartStage startStage,
@@ -28,9 +30,11 @@ public class PojoSelectProcessorFactoryProvider implements Provider<SelectProces
             @Inject PojoFetchStage pojoFetchStage,
             @Inject SelectEncoderInstallStage encoderStage,
 
-            @Inject AgExceptionMappers exceptionMappers) {
+            @Inject AgExceptionMappers exceptionMappers,
+            @Inject ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory) {
 
         this.exceptionMappers = exceptionMappers;
+        this.processorDecoratorFactory = processorDecoratorFactory;
 
         stages = new EnumMap<>(SelectStage.class);
         stages.put(SelectStage.START, startStage);
@@ -43,7 +47,7 @@ public class PojoSelectProcessorFactoryProvider implements Provider<SelectProces
 
     @Override
     public SelectProcessorFactory get() throws DIRuntimeException {
-        return new SelectProcessorFactory(stages, exceptionMappers);
+        return new SelectProcessorFactory(stages, exceptionMappers, processorDecoratorFactory);
     }
 
 

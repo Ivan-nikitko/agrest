@@ -1,6 +1,7 @@
 package io.agrest.runtime.processor.select;
 
 import io.agrest.SelectStage;
+import io.agrest.processor.ExceptionMappingProcessorDecoratorFactory;
 import io.agrest.processor.Processor;
 import io.agrest.processor.ProcessorFactory;
 import io.agrest.runtime.AgExceptionMappers;
@@ -14,7 +15,8 @@ public class SelectProcessorFactory extends ProcessorFactory<SelectStage, Select
 
     public SelectProcessorFactory(
             EnumMap<SelectStage, Processor<SelectContext<?>>> defaultStages,
-            AgExceptionMappers exceptionMappers) {
-        super(defaultStages, exceptionMappers);
+            AgExceptionMappers exceptionMappers,
+            ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory) {
+        super(defaultStages, exceptionMappers, processorDecoratorFactory);
     }
 }

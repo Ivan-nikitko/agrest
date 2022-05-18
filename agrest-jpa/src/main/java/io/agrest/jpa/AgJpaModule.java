@@ -7,6 +7,7 @@ import io.agrest.jpa.exp.IJpaExpParser;
 import io.agrest.jpa.exp.JpaExpParser;
 import io.agrest.jpa.persister.IAgJpaPersister;
 import io.agrest.jpa.pocessor.IJpaQueryAssembler;
+import io.agrest.jpa.pocessor.JpaExceptionMappingProcessorDecoratorFactory;
 import io.agrest.jpa.pocessor.JpaQueryAssembler;
 import io.agrest.jpa.pocessor.delete.stage.JpaDeleteInDataStoreStage;
 import io.agrest.jpa.pocessor.delete.stage.JpaDeleteMapChangesStage;
@@ -26,6 +27,7 @@ import io.agrest.jpa.pocessor.update.stage.JpaOkResponseStage;
 import io.agrest.jpa.pocessor.update.stage.JpaUpdateApplyServerParamsStage;
 import io.agrest.jpa.pocessor.update.stage.JpaUpdateCommitStage;
 import io.agrest.jpa.pocessor.update.stage.JpaUpdateStartStage;
+import io.agrest.processor.ExceptionMappingProcessorDecoratorFactory;
 import io.agrest.runtime.processor.delete.stage.DeleteInDataStoreStage;
 import io.agrest.runtime.processor.delete.stage.DeleteMapChangesStage;
 import io.agrest.runtime.processor.delete.stage.DeleteStartStage;
@@ -64,6 +66,9 @@ public class AgJpaModule implements Module {
 
         binder.bind(IJpaQueryAssembler.class).to(JpaQueryAssembler.class);
         binder.bind(SelectApplyServerParamsStage.class).to(JpaSelectApplyServerParamsStage.class);
+
+        binder.bind(ExceptionMappingProcessorDecoratorFactory.class).to(JpaExceptionMappingProcessorDecoratorFactory.class);
+
 
         binder.bind(IJpaExpParser.class).to(JpaExpParser.class);
 

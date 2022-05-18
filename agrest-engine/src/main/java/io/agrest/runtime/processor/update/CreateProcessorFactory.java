@@ -1,6 +1,7 @@
 package io.agrest.runtime.processor.update;
 
 import io.agrest.UpdateStage;
+import io.agrest.processor.ExceptionMappingProcessorDecoratorFactory;
 import io.agrest.processor.Processor;
 import io.agrest.runtime.AgExceptionMappers;
 
@@ -13,7 +14,8 @@ public class CreateProcessorFactory extends BaseUpdateProcessorFactory {
 
     public CreateProcessorFactory(
             EnumMap<UpdateStage, Processor<UpdateContext<?>>> defaultStages,
-            AgExceptionMappers exceptionMappers) {
-        super(defaultStages, exceptionMappers);
+            AgExceptionMappers exceptionMappers,
+            ExceptionMappingProcessorDecoratorFactory processorDecoratorFactory) {
+        super(defaultStages, exceptionMappers, processorDecoratorFactory);
     }
 }

@@ -33,6 +33,8 @@ import io.agrest.meta.AgDataMap;
 import io.agrest.meta.AgEntityOverlay;
 import io.agrest.meta.parser.IResourceParser;
 import io.agrest.meta.parser.ThrowingResourceParser;
+import io.agrest.processor.DefaultExceptionMappingProcessorDecoratorFactory;
+import io.agrest.processor.ExceptionMappingProcessorDecoratorFactory;
 import io.agrest.runtime.constraints.ConstraintsHandler;
 import io.agrest.runtime.constraints.IConstraintsHandler;
 import io.agrest.runtime.encoder.EncodablePropertyFactory;
@@ -179,6 +181,7 @@ public class AgCoreModule implements Module {
         exceptionMappers.forEach(mapperBuilder::put);
 
         binder.bind(AgExceptionMappers.class).to(AgExceptionMappers.class);
+        binder.bind(ExceptionMappingProcessorDecoratorFactory.class).to(DefaultExceptionMappingProcessorDecoratorFactory.class);
 
         // select stages
         binder.bind(SelectProcessorFactory.class).toProvider(SelectProcessorFactoryProvider.class);
