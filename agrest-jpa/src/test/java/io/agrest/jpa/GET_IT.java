@@ -33,7 +33,8 @@ class GET_IT extends DbTest {
 
     @BQTestTool
     static final AgJpaTester tester = tester(Resource.class)
-            .entities(E1.class, E3.class, E2.class, E4.class, E6.class, E17.class, E30.class,E28.class,E29.class)
+            .entities(E1.class, E3.class, E2.class, E4.class, E6.class, E17.class,
+                    E30.class, E28.class, E29.class, E36.class, E36.class)
             .build();
 
     @Test
@@ -89,9 +90,6 @@ class GET_IT extends DbTest {
 
         tester.target("/e4").queryParam("include", E4.C_TIME).get().wasOk().bodyEquals(1, "{\"cTime\":\"" + timeString + "\"}");
     }
-
-
-
 
 
     @Test
@@ -193,8 +191,102 @@ class GET_IT extends DbTest {
                 .bodyEquals(1, "{\"id\":1,\"address\":null,\"e3s\":[{\"id\":8},{\"id\":9}],\"name\":\"xxx\"}");
     }
 
-    //TODO testRelationshipSort
     //TODO testRelationshipStartLimit
+
+    @Test
+    public void testRelationshipSort() {
+
+        tester.e2().insertColumns("ID", "NAME")
+                .values(1, "zzz")
+                .values(2, "yyy")
+                .values(3, "xxx").exec();
+
+        tester.e3().insertColumns("ID", "NAME", "E2_ID")
+                .values(8, "aaa", 1)
+                .values(9, "bbb", 2)
+                .values(10, "ccc", 3).exec();
+
+        tester.target("/e3")
+                .queryParam("include", "id")
+                .queryParam("include", E3.E2)
+                .queryParam("sort", "e2.name")
+
+                .get()
+                .wasBadRequest()
+                .bodyEquals("{\"success\":false,\"message\":\"Unsupported sort type\"}");
+
+//                .get().wasOk().bodyEquals(3,
+//                        "{\"id\":10,\"e2\":{\"id\":3,\"address\":null,\"name\":\"xxx\"}}",
+//                        "{\"id\":9,\"e2\":{\"id\":2,\"address\":null,\"name\":\"yyy\"}}",
+//                        "{\"id\":8,\"e2\":{\"id\":1,\"address\":null,\"name\":\"zzz\"}}");
+    }
+
+
+    @Test
+    public void testRelationshipParamSort() {
+
+        tester.e2().insertColumns("ID", "NAME")
+                .values(1, "zzz")
+                .values(2, "yyy")
+                .values(3, "xxx").exec();
+
+        tester.e3().insertColumns("ID", "NAME", "E2_ID")
+                .values(8, "aaa", 1)
+                .values(9, "bbb", 2)
+                .values(10, "ccc", 3).exec();
+
+        tester.target("/e3")
+                .queryParam("include", "id")
+                .queryParam("include", E3.E2)
+                .queryParam("sort", "{\"property\":\"e2.name\",\"direction\":\"ASC\"}")
+
+                .get()
+                .wasBadRequest()
+                .bodyEquals("{\"success\":false,\"message\":\"Unsupported sort type\"}");
+
+//                .get().wasOk().bodyEquals(3,
+//                        "{\"id\":10,\"e2\":{\"id\":3,\"address\":null,\"name\":\"xxx\"}}",
+//                        "{\"id\":9,\"e2\":{\"id\":2,\"address\":null,\"name\":\"yyy\"}}",
+//                        "{\"id\":8,\"e2\":{\"id\":1,\"address\":null,\"name\":\"zzz\"}}");
+    }
+
+    @Test
+    public void testTwoLevelRelationshipSort() {
+
+        tester.e2().insertColumns("ID", "NAME")
+                .values(1, "zzz")
+                .values(2, "yyy")
+                .values(3, "xxx").exec();
+
+        tester.e35().insertColumns("ID", "NAME", "E2_ID")
+                .values(4, "aaa", 1)
+                .values(5, "bbb", 2)
+                .values(6, "ccc", 3).exec();
+
+        tester.e36().insertColumns("ID", "NAME", "E35_ID")
+                .values(7, "e36NameA", 4)
+                .values(8, "e36NameB", 5)
+                .values(9, "e36NameC", 6).exec();
+
+        tester.target("/e36")
+                .queryParam("include", "id")
+                .queryParam("include", E36.E35)
+                //   .queryParam("include", E35.E2)
+                .queryParam("sort", "{\"property\":\"e35.e2.name\",\"direction\":\"ASC\"}")
+
+                .get()
+                .wasBadRequest()
+                .bodyEquals("{\"success\":false,\"message\":\"Unsupported sort type\"}");
+
+//                .get().wasOk().bodyEquals(3,
+//                        "{\"id\":9,\"e35\":{\"id\":6,\"address\":null,\"name\":\"ccc\"}}",
+//                        "{\"id\":8,\"e35\":{\"id\":5,\"address\":null,\"name\":\"bbb\"}}",
+//                        "{\"id\":7,\"e35\":{\"id\":4,\"address\":null,\"name\":\"aaa\"}}");
+
+
+
+    }
+
 
     @Test
     public void testToOne_Null() {
@@ -312,7 +404,6 @@ class GET_IT extends DbTest {
     }
 
 
-
     @Path("")
     @Produces(MediaType.APPLICATION_JSON)
     public static class Resource {
@@ -378,6 +469,12 @@ class GET_IT extends DbTest {
         @Path("e29")
         public DataResponse<E29> getAllE29s(@Context UriInfo uriInfo) {
             return AgJaxrs.select(E29.class, config).clientParams(uriInfo.getQueryParameters()).getOne();
+        }
+
+        @GET
+        @Path("e36")
+        public DataResponse<E36> getE36(@Context UriInfo uriInfo) {
+            return AgJaxrs.select(E36.class, config).clientParams(uriInfo.getQueryParameters()).get();
         }
 
 

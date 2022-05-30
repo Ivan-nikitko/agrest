@@ -23,7 +23,7 @@ public class GET_AgRequestIT extends DbTest {
 
     @BQTestTool
     static final AgJpaTester tester = tester(Resource.class)
-            .entities(E2.class, E3.class, E4.class)
+            .entities(E3.class, E2.class, E4.class)
             .build();
 
     @Test

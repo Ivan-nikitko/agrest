@@ -42,6 +42,8 @@
         <mapping class="io.agrest.jpa.model.E32"/>
         <mapping class="io.agrest.jpa.model.E33"/>
         <mapping class="io.agrest.jpa.model.E34"/>
+        <mapping class="io.agrest.jpa.model.E35"/>
+        <mapping class="io.agrest.jpa.model.E36"/>
 
     </session-factory>
 </hibernate-configuration>
