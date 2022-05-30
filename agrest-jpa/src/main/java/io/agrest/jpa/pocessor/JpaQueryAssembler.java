@@ -45,7 +45,7 @@ public class JpaQueryAssembler implements IJpaQueryAssembler {
         EntityParent<?> parent = context.getParent();
 
         JpaQueryBuilder query;
-        if(parent == null) {
+        if (parent == null) {
             query = context.getId() != null
                     ? createRootIdQuery(entity, context.getId())
                     : createBaseQuery(entity);
@@ -73,7 +73,7 @@ public class JpaQueryAssembler implements IJpaQueryAssembler {
 
         JpaQueryBuilder select = viaParentJoinQuery(entity.getParent().getName(), relationship, entity.getIncoming().isToMany())
                 .selectSpec("e.id");
-        if(parentSelect.hasWhere()) {
+        if (parentSelect.hasWhere()) {
             // TODO: translate to a new root
             select.where(parentSelect.getWhere());
         }
@@ -83,7 +83,7 @@ public class JpaQueryAssembler implements IJpaQueryAssembler {
     }
 
     private JpaQueryBuilder viaParentJoinQuery(String parentName, String relationship, boolean toMany) {
-        if(toMany) {
+        if (toMany) {
             return JpaQueryBuilder.select("r")
                     .from(parentName, "e")
                     .from("IN (e." + relationship + ")", "r");
@@ -136,14 +136,14 @@ public class JpaQueryAssembler implements IJpaQueryAssembler {
     JpaExpression createIdQualifier(Map<String, Object> idMap, String alias) {
         StringBuilder sb = new StringBuilder();
         int i = 0;
-        for(String key : idMap.keySet()) {
-            if(sb.length() > 0) {
+        for (String key : idMap.keySet()) {
+            if (sb.length() > 0) {
                 sb.append(" and ");
             }
             sb.append(alias).append('.').append(key).append(" = ?").append(i++);
         }
         JpaExpression expression = new JpaExpression(sb.toString());
-        for(Object value: idMap.values()) {
+        for (Object value : idMap.values()) {
             expression.addParameter(value);
         }
         return expression;
@@ -167,11 +167,26 @@ public class JpaQueryAssembler implements IJpaQueryAssembler {
     }
 
     private <T> String toOrdering(ResourceEntity<T> entity, Sort o) {
-        if(!entity.getAttributes().containsKey(o.getProperty())) {
-            if(entity.getAgEntity().getIdPart(o.getProperty()) == null) {
-                throw AgException.badRequest("Invalid path '%s' for '%s'", o.getProperty(), entity.getName());
+        checkPath(entity, o);
+        return o.getProperty() + " " + o.getDirection();
+    }
+
+    private <T> void checkPath(ResourceEntity<T> entity, Sort o) {
+
+        String[] properties = o.getProperty().split("\\.");
+        AgRelationship lastNotNullRelationship = null;
+        AgRelationship agRelationship = entity.getAgEntity().getRelationship(properties[0]);
+
+        for (int i = 1; i < properties.length; i++) {
+            if (agRelationship != null) {
+                lastNotNullRelationship = agRelationship;
+                agRelationship = agRelationship.getTargetEntity().getRelationship(properties[i]);
+            }
+            if (agRelationship == null) {
+                if (lastNotNullRelationship == null || lastNotNullRelationship.getTargetEntity().getAttribute(properties[(properties.length - 1)]) == null) {
+                    throw AgException.badRequest("Invalid path '%s' for '%s'", o.getProperty(), entity.getName());
+                }
             }
         }
-        return o.getProperty() + " " + o.getDirection();
     }
 }

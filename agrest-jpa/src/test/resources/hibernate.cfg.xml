@@ -8,7 +8,7 @@
         <property name="dialect">org.hibernate.dialect.DerbyTenSevenDialect</property>
         <property name="hbm2ddl.auto">none</property> <!-- validate -->
         <property name="show_sql">true</property>
-        <property name="format_sql">false</property>
+        <property name="format_sql">true</property>
 
         <mapping class="io.agrest.jpa.model.E1"/>
         <mapping class="io.agrest.jpa.model.E2"/>
@@ -42,6 +42,8 @@
         <mapping class="io.agrest.jpa.model.E32"/>
         <mapping class="io.agrest.jpa.model.E33"/>
         <mapping class="io.agrest.jpa.model.E34"/>
+        <mapping class="io.agrest.jpa.model.E35"/>
+        <mapping class="io.agrest.jpa.model.E36"/>
 
     </session-factory>
 </hibernate-configuration>
