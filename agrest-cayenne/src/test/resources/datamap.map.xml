@@ -5,6 +5,10 @@
 	 project-version="10">
 	<property name="defaultPackage" value="io.agrest.cayenne.cayenne.main"/>
 	<property name="quoteSqlIdentifiers" value="true"/>
+	<embeddable className="io.agrest.cayenne.cayenne.main.E37EmbeddedClass">
+		<embeddable-attribute name="city" type="java.lang.String" db-attribute-name="city"/>
+		<embeddable-attribute name="street" type="java.lang.String" db-attribute-name="street"/>
+	</embeddable>
 	<db-entity name="e1">
 		<db-attribute name="age" type="INTEGER"/>
 		<db-attribute name="description" type="VARCHAR" length="100"/>
@@ -159,6 +163,12 @@
 		<db-attribute name="e29_id2" type="INTEGER"/>
 		<db-attribute name="id" type="INTEGER" isPrimaryKey="true" isGenerated="true" isMandatory="true"/>
 	</db-entity>
+	<db-entity name="e37">
+		<db-attribute name="city" type="VARCHAR" length="200"/>
+		<db-attribute name="id" type="INTEGER" isPrimaryKey="true" isMandatory="true"/>
+		<db-attribute name="name" type="VARCHAR" length="100"/>
+		<db-attribute name="street" type="VARCHAR" length="200"/>
+	</db-entity>
 	<db-entity name="e4">
 		<db-attribute name="c_boolean" type="BOOLEAN"/>
 		<db-attribute name="c_date" type="DATE"/>
@@ -297,6 +307,10 @@
 		<obj-attribute name="phoneNumber" type="java.lang.String" db-attribute-path="phone_number"/>
 	</obj-entity>
 	<obj-entity name="E30" className="io.agrest.cayenne.cayenne.main.E30" dbEntityName="e30"/>
+	<obj-entity name="E37" className="io.agrest.cayenne.cayenne.main.E37" dbEntityName="e37">
+		<embedded-attribute name="address" type="io.agrest.cayenne.cayenne.main.E37EmbeddedClass"/>
+		<obj-attribute name="name" type="java.lang.String" db-attribute-path="name"/>
+	</obj-entity>
 	<obj-entity name="E4" className="io.agrest.cayenne.cayenne.main.E4" dbEntityName="e4">
 		<obj-attribute name="cBoolean" type="java.lang.Boolean" db-attribute-path="c_boolean"/>
 		<obj-attribute name="cDate" type="java.util.Date" db-attribute-path="c_date"/>

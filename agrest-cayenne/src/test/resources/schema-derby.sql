@@ -18,6 +18,9 @@ CREATE TABLE "e19" ("big_decimal" DECIMAL (18, 2), "big_integer" DECIMAL (18), "
 CREATE TABLE "e8" ("id" INTEGER  NOT NULL, "name" VARCHAR (100), PRIMARY KEY ("id"))
 ;
 
+CREATE TABLE "e37" ("id" INTEGER  NOT NULL, "name" VARCHAR (100), "city" VARCHAR (100),"street" VARCHAR (100), PRIMARY KEY ("id"))
+;
+
 CREATE TABLE "e24" ("TYPE" INTEGER  NOT NULL, "name" VARCHAR (100), PRIMARY KEY ("TYPE"))
 ;
 

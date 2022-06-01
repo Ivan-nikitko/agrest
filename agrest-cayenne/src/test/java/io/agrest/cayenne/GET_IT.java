@@ -7,6 +7,7 @@ import io.agrest.cayenne.cayenne.main.E2;
 import io.agrest.cayenne.cayenne.main.E28;
 import io.agrest.cayenne.cayenne.main.E29;
 import io.agrest.cayenne.cayenne.main.E3;
+import io.agrest.cayenne.cayenne.main.E37;
 import io.agrest.cayenne.cayenne.main.E4;
 import io.agrest.cayenne.cayenne.main.E6;
 import io.agrest.cayenne.unit.AgCayenneTester;
@@ -432,6 +433,18 @@ public class GET_IT extends DbTest {
                 .bodyEquals(2, "{\"a\":\"A\",\"json\":[1,2],\"z\":\"Z\"}", "{\"a\":\"A\",\"json\":{},\"z\":\"Z\"}");
     }
 
+    @Test
+    public void testEmbeddedProperty() {
+
+        tester.e37().insertColumns("id","city", "street", "name").values(1,"London", "Baker St.", "Sherlock Holmes").exec();
+
+        tester.target("/e37")
+                .queryParam("id", 1)
+                .get()
+                .wasOk()
+                .bodyEquals(1, "{\"id\":1,\"address\":{\"city\":\"London\",\"street\":\"Baker St.\"},\"name\":\"Sherlock Holmes\"}");
+    }
+
     @Path("")
     @Produces(MediaType.APPLICATION_JSON)
     public static class Resource {
@@ -540,6 +553,12 @@ public class GET_IT extends DbTest {
             ids.put(E29.ID2PROP.getName(), id2);
 
             return AgJaxrs.select(E29.class, config).clientParams(uriInfo.getQueryParameters()).byId(ids).getOne();
+        }
+
+        @GET
+        @Path("e37")
+        public DataResponse<E37> getE37(@Context UriInfo uriInfo) {
+            return AgJaxrs.select(E37.class, config).clientParams(uriInfo.getQueryParameters()).get();
         }
     }
 

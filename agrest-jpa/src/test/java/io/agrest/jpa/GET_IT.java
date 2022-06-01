@@ -34,7 +34,7 @@ class GET_IT extends DbTest {
     @BQTestTool
     static final AgJpaTester tester = tester(Resource.class)
             .entities(E1.class, E3.class, E2.class, E4.class, E6.class, E17.class,
-                    E30.class, E28.class, E29.class, E36.class, E36.class)
+                    E30.class, E28.class, E29.class, E36.class, E36.class, E37.class)
             .build();
 
     @Test
@@ -388,6 +388,18 @@ class GET_IT extends DbTest {
                 .get().wasOk().bodyEquals(1, "{\"guid\":\"c29tZVZhbHVlMTIz\"}");
     }
 
+    @Test
+    public void testEmbeddedProperty() {
+
+        tester.e37().insertColumns("ID","CITY", "STREET", "NAME").values(1,"London", "Baker St.", "Sherlock Holmes").exec();
+
+        tester.target("/e37")
+                .queryParam("id", 1)
+                .get()
+                .wasOk()
+                .bodyEquals(1, "{\"id\":1,\"address\":{\"city\":\"London\",\"street\":\"Baker St.\"},\"name\":\"Sherlock Holmes\"}");
+    }
+
 
     @Path("")
     @Produces(MediaType.APPLICATION_JSON)
@@ -460,6 +472,12 @@ class GET_IT extends DbTest {
         @Path("e36")
         public DataResponse<E36> getE36(@Context UriInfo uriInfo) {
             return AgJaxrs.select(E36.class, config).clientParams(uriInfo.getQueryParameters()).get();
+        }
+
+        @GET
+        @Path("e37")
+        public DataResponse<E37> getE37(@Context UriInfo uriInfo) {
+            return AgJaxrs.select(E37.class, config).clientParams(uriInfo.getQueryParameters()).get();
         }
 
 
